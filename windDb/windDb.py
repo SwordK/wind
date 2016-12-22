@@ -10,10 +10,10 @@ import utils.dateTime as dateTime
 
 class CWindDb(object):
     def __init__(self,host,user,pwd,db):
-        self.strHost = host
-        self.strUser = user
-        self.strPwd = pwd
-        self.strDb = db
+        self.__strHost = host
+        self.__strUser = user
+        self.__strPwd = pwd
+        self.__strDB = db
 
     # Return None or set<int>
     def DBReqTradingCalendar(self, strExchange, strStartDate = '', strEndDate = ''):
@@ -41,7 +41,7 @@ class CWindDb(object):
             strSelect += '\' and TRADE_DAYS <= \'' + strEndDateFix + '\')'
 
         # Query
-        sqlS = sqlServer.CSqlServer(self.strHost, self.strUser, self.strPwd, self.strDb)
+        sqlS = sqlServer.CSqlServer(self.__strHost, self.__strUser, self.__strPwd, self.__strDB)
         listTradingCalendar = sqlS.ExecQuery(strSelect)
 
         setTradingCalendar = set()
