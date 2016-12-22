@@ -40,10 +40,8 @@ class CTradingCalendar(object):
             nTd = int(tradingDay)
             pass
         else:
-            print('not td')
             return False
 
         if (strExchange in self.__dictTc == False):
-            print(123)
             return False
         return nTd in self.__dictTc[strExchange]
