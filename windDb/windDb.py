@@ -27,10 +27,8 @@ class CWindDb(object):
         # Gen Select Sql Script
         strSelect = ''
         if (strExchange in listFuturesExchange):
-            print(strExchange)
             strSelect = 'select TRADE_DAYS from [WindDB].[dbo].[CFUTURESCALENDAR]'
         elif (strExchange in listStockExchange):
-            print(strExchange)
             strSelect = 'select TRADE_DAYS from [WindDB].[dbo].[ASHARECALENDAR]'
         else:
             return None
