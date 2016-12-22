@@ -26,7 +26,7 @@ def isValidDate_Iso(str):
     except:
         return False
 
-def DateFromat_Iso2IsoExt(strIso):
+def DateFormat_Iso2IsoExt(strIso):
     if (isValidDate_Iso(strIso) == False):
         return None
     timeArray = time.strptime(strIso, "%Y%m%d")
@@ -37,6 +37,26 @@ def DateFormat_IsoExt2Iso(strIsoExt):
         return None
     timeArray = time.strptime(strIsoExt, "%Y-%m-%d")
     return time.strftime("%Y%m%d", timeArray)
+
+def ToIso(strDate):
+    if (strDate != ''):
+        if (isValidDate_IsoExt(strDate)):
+            return DateFormat_IsoExt2Iso(strDate)
+        elif (isValidDate_Iso(strDate)):
+            return strDate
+        else:
+            return None
+    return ''
+
+def ToIsoExt(strDate):
+    if (strDate != ''):
+        if (isValidDate_IsoExt(strDate)):
+            return strDate
+        elif (isValidDate_Iso(strDate)):
+            return DateFormat_Iso2IsoExt(strDate)
+        else:
+            return None
+    return ''
 
 # print(isValidDate_IsoExt('2016-12-31'))
 # print(isValidDate_IsoExt('2016-2-2'))
@@ -51,5 +71,8 @@ def DateFormat_IsoExt2Iso(strIsoExt):
 # print(isValidDate_Iso('2016-02-02'))
 # print(isValidDate_Iso('2016202'))
 
-# print(DateFromat_Iso2IsoExt('20100203'))
+# print(DateFormat_Iso2IsoExt('20100203'))
 # print(DateFormat_IsoExt2Iso('2010-02-03'))
+
+# print(ToIso('2016-02-29'))
+# print(ToIsoExt('20160229'))
