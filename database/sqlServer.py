@@ -6,23 +6,18 @@
 import pymssql
 
 class CSqlServer(object):
-    strHost = None
-    strUser = None
-    strPwd = None
-    strDb = None
-    conn = None
-
     def __init__(self,host,user,pwd,db):
-        self.strHost = host
-        self.strUser = user
-        self.strPwd = pwd
-        self.strDb = db
+        self.__strHost = host
+        self.__strUser = user
+        self.__strPwd = pwd
+        self.__strDb = db
+        self.__conn = None
 
     def GetConnect(self):
-        if (self.strDb == None):
+        if (self.__strDb == None):
             raise(NameError,"没有设置数据库信息")
-        self.conn = pymssql.connect(host=self.strHost,user=self.strUser,password=self.strPwd,database=self.strDb,charset="utf8")
-        cur = self.conn.cursor()
+        self.__conn = pymssql.connect(host=self.__strHost,user=self.__strUser,password=self.__strPwd,database=self.__strDb,charset="utf8")
+        cur = self.__conn.cursor()
         if not cur:
             raise(NameError,"连接数据库失败")
         else:
@@ -34,7 +29,7 @@ class CSqlServer(object):
         resList = cur.fetchall()
 
         #查询完毕后必须关闭连接
-        self.conn.close()
+        self.__conn.close()
         return resList
 
 # strSelect = 'select S_INFO_EXCHMARKET, TRADE_DAYS from [WindDB].[dbo].[CFUTURESCALENDAR] where S_INFO_EXCHMARKET = \'CFFEX\''
