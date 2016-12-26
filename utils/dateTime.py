@@ -4,6 +4,7 @@
 # desc: 日期时间相关
 
 import time
+import datetime
 
 # YYYY-MM-DD
 def isValidDate_IsoExt(str):
@@ -38,7 +39,11 @@ def DateFormat_IsoExt2Iso(strIsoExt):
     timeArray = time.strptime(strIsoExt, "%Y-%m-%d")
     return time.strftime("%Y%m%d", timeArray)
 
-def ToIso(strDate):
+def ToIso(inputDate):
+    strDate = inputDate
+    if (isinstance(inputDate, datetime.date)):
+        strDate = inputDate.strftime('%Y%m%d')
+        return strDate
     if (strDate != ''):
         if (isValidDate_IsoExt(strDate)):
             return DateFormat_IsoExt2Iso(strDate)
@@ -48,7 +53,12 @@ def ToIso(strDate):
             return None
     return ''
 
-def ToIsoExt(strDate):
+def ToIsoExt(inputDate):
+    strDate = inputDate
+    if (isinstance(inputDate, datetime.date)):
+        strDate = inputDate.strftime('%Y-%m-%d')
+        return strDate
+
     if (strDate != ''):
         if (isValidDate_IsoExt(strDate)):
             return strDate
