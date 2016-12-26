@@ -44,6 +44,9 @@ def ToIso(inputDate):
     if (isinstance(inputDate, datetime.date)):
         strDate = inputDate.strftime('%Y%m%d')
         return strDate
+
+    if (isinstance(inputDate, int)):
+        strDate = str(inputDate)
     if (strDate != ''):
         if (isValidDate_IsoExt(strDate)):
             return DateFormat_IsoExt2Iso(strDate)
@@ -59,6 +62,8 @@ def ToIsoExt(inputDate):
         strDate = inputDate.strftime('%Y-%m-%d')
         return strDate
 
+    if (isinstance(inputDate, int)):
+        strDate = str(inputDate)
     if (strDate != ''):
         if (isValidDate_IsoExt(strDate)):
             return strDate
@@ -67,6 +72,20 @@ def ToIsoExt(inputDate):
         else:
             return None
     return ''
+
+def ToDateTime(inputDate):
+    strDate = inputDate
+    if (isinstance(inputDate, int)):
+        strDate = str(inputDate)
+
+    if (strDate != ''):
+        if (isValidDate_IsoExt(strDate)):
+            return datetime.datetime.strptime(strDate, "%Y-%m-%d")
+        elif (isValidDate_Iso(strDate)):
+            return datetime.datetime.strptime(strDate, "%Y%m%d")
+        else:
+            return None
+
 
 # print(isValidDate_IsoExt('2016-12-31'))
 # print(isValidDate_IsoExt('2016-2-2'))
@@ -86,3 +105,7 @@ def ToIsoExt(inputDate):
 
 # print(ToIso('2016-02-29'))
 # print(ToIsoExt('20160229'))
+
+# print(ToDateTime(20160229))
+# print(ToDateTime('20160229'))
+# print(ToDateTime('2016-02-29'))

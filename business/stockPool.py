@@ -94,7 +94,7 @@ class CStockPool(object):
 
                     self.__dictSpElemsByTd[nLoopDate].append(strStock)
                     # Next Date
-                    dateLoopDate = dateTime.ToTimeArray(nLoopDate)
+                    dateLoopDate = dateTime.ToDateTime(nLoopDate)
                     dateTomorrow = dateLoopDate + datetime.timedelta(days=1)
                     nLoopDate = int(dateTime.ToIso(dateTomorrow))
 
