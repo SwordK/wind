@@ -151,13 +151,13 @@ class CStockSectionRecordsManager(object):
         self.__dictStockSectionsByTd[nTradingDay][nStockId].d_val_mv = d_val_mv
         self.__dictStockSectionsByTd[nTradingDay][nStockId].d_dq_mv = d_dq_mv
         self.__dictStockSectionsByTd[nTradingDay][nStockId].d_freeshared_today = d_freeshared_today
-        print(strStockWindCode, nTradingDay, self.__dictStockSectionsByTd[nTradingDay][nStockId].dPe \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPb \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPcf \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPs \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_val_mv \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_dq_mv \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_freeshared_today)
+        # print(strStockWindCode, nTradingDay, self.__dictStockSectionsByTd[nTradingDay][nStockId].dPe \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPb \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPcf \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPs \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_val_mv \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_dq_mv \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_freeshared_today)
         return True
 
     def AddValue2(self, strStockWindCode, nTradingDay, d_qfa_yoynetprofit, d_qfa_yoysales, d_fa_yoy_equity, d_fa_yoyroe, d_fa_yoyocf):
@@ -175,10 +175,48 @@ class CStockSectionRecordsManager(object):
         self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyroe = d_fa_yoyroe
         self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyocf = d_fa_yoyocf
         # self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_roe_deducted = d_qfa_roe_deducted
-        print(strStockWindCode, nTradingDay, self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoynetprofit \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoysales \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoy_equity \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyroe \
-            , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyocf)
+        # print(strStockWindCode, nTradingDay, self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoynetprofit \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoysales \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoy_equity \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyroe \
+        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyocf)
         return True
 
+
+    def GetStockSectionElem(self, euSs, strStockWindCode, nTradingDay):
+        if (isinstance(euSs, EU_StockSection) == False):
+            return False
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        if (nStockId == None):
+            return False
+        if (nTradingDay not in self.__dictStockSectionsByTd.keys()):
+            return False
+        if (nStockId not in self.__dictStockSectionsByTd[nTradingDay].keys()):
+            return False
+        dValue = 0.0
+        if (euSs == euSs_Pe):
+            dValue = self.dPe
+        elif (euSs == euSs_Pb):
+            dValue = self.dPb
+        elif (euSs == euSs_Pcf):
+            dValue = self.dPcf
+        elif (euSs == euSs_Ps):
+            dValue = self.dPs
+        elif (euSs == euSs_MarketValueTotal):
+            dValue = self.d_val_mv
+        elif (euSs == euSs_MarketValueFlowing):
+            dValue = self.d_dq_mv
+        elif (euSs == euSs_MarketValueFlowingFree):
+            dValue = self.d_freefloat_mv
+        elif (euSs == euSs_Qfa_yoynetprofit):
+            dValue = self.d_qfa_yoynetprofit
+        elif (euSs == euSs_Qfa_yoysales):
+            dValue = self.d_qfa_yoysales
+        elif (euSs == euSs_Fa_yoyroe):
+            dValue = self.d_fa_yoyroe
+        elif (euSs == euSs_Fa_yoyocf):
+            dValue = self.d_fa_yoyocf
+        elif (euSs == euSs_Fa_yoy_equity):
+            dValue = self.d_fa_yoy_equity
+
+        return CStockSectionElem(strStockWindCode, nTradingDay, euSs, dValue)
