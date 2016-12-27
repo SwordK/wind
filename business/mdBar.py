@@ -6,6 +6,7 @@
 import sys;sys.path.append("../")
 
 from enum import Enum
+import business.stockCn as stockCn
 import time
 
 # Enum
@@ -51,9 +52,13 @@ class CMdBarDataManager(object):
     def __init__(self):
         pass
 
-    def Add(self, nStockId, mdBarData):
-        if (isinstance(nStockId, int) == False or isinstance(mdBarData, CMdBarData) == False):
+    def Add(self, strStockWindCode, mdBarData):
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        if (nStockId == None):
             return False
+        if (isinstance(mdBarData, CMdBarData) == False):
+            return False
+
         euMdBi = mdBarData.GetInterval()
         if (euMdBi not in self.__dictMdBarData.keys()):
             self.__dictMdBarData[euMdBi] = {}
