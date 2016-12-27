@@ -75,10 +75,38 @@ class CWindDb(object):
             listRow = [strStockWindCode, nInDate, nOutDate, nIsIn]
             listStockPool.append(listRow)
         return listStockPool
-        pass
 
-# print(type(datetime.date.today()))
-# windInst = CWindDb('10.63.6.100', 'ForOTC', 'otc12345678', 'WindDB')
-# listSp = windInst.DBReqStockPool('000016.SH')
-# for row in listSp:
-#     print(row)
+
+    def DBReqIndustries_ZX(self):
+        strSelect = "SELECT INDUSTRIESCODE, INDUSTRIESNAME, LEVELNUM, USED, INDUSTRIESALIAS, SEQUENCE FROM [WindDB].[dbo].[ASHAREINDUSTRIESCODE]"
+        strSelect += " where INDUSTRIESCODE like 'b1%' order by 3"
+
+        sqlS = sqlServer.CSqlServer(self.__strHost, self.__strUser, self.__strPwd, self.__strDB)
+        listResult = sqlS.ExecQuery(strSelect)
+        return listResult
+
+
+    def DBReqStockIndustries_ZX(self):
+        strSelect = "SELECT S_INFO_WINDCODE, CITICS_IND_CODE, ENTRY_DT, REMOVE_DT, CUR_SIGN FROM [WindDB].[dbo].[ASHAREINDUSTRIESCLASSCITICS];"
+        sqlS = sqlServer.CSqlServer(self.__strHost, self.__strUser, self.__strPwd, self.__strDB)
+        listResult = sqlS.ExecQuery(strSelect)
+
+        listStockIndustries = []
+        for row in listResult:
+            if (len(row) != 5):
+                continue
+            strStockWindCode = row[0]
+            strICode = row[1]
+            nInDate = int(dateTime.ToIso(row[2]))
+            nOutDate = -1
+            nIsIn = int(row[4])
+
+            if (nIsIn == 0):
+                nOutDate = int(dateTime.ToIso(row[3]))
+            else:
+                dtToday = datetime.date.today()
+                nOutDate = int(dateTime.ToIso(dtToday))
+            listRow = [strStockWindCode, strICode, nInDate, nOutDate, nIsIn]
+            listStockIndustries.append(listRow)
+        return listStockIndustries
+
