@@ -52,8 +52,8 @@ class CStockPoolElem(object):
 class CStockPool(object):
     def __init__(self, euSpt):
         self.__euSpt = euSpt
-        self.__dictSpElems = {}
-        self.__dictSpElemsByTd = {}
+        self.__dictSpElems = {}         # StockId -> list<CStockPoolElem>
+        self.__dictSpElemsByTd = {}     # tradingDay -> list<StockId>
 
     def GetType(self):
         return self.__euSpt
@@ -67,6 +67,20 @@ class CStockPool(object):
             return self.__dictSpElemsByTd[nTd]
         else:
             return None
+
+    # @param
+    # @return: set<Stocks>
+    def GetStocksByDatePeriod(self, dtFrom, dtTo):
+        dtPeriod = dateTime.CDatePeriod(dtFrom, dtTo)
+        setRtn = set()
+        for dtLoop in dtPeriod.DateList():
+            listLoop = self.GetStocksByTd(dtLoop)
+            if (listLoop == None):
+                continue
+            for dtElem in listLoop:
+                setRtn.add(dtElem)
+        return sorted(setRtn)
+
 
     def AddElem(self, spElem):
         if (isinstance(spElem, CStockPoolElem) == False):
@@ -90,8 +104,6 @@ class CStockPool(object):
                 while (nLoopDate <= nOutDate):
                     if ((nLoopDate in self.__dictSpElemsByTd) == False):
                         self.__dictSpElemsByTd[nLoopDate] = list()
-                        print('add index ', nLoopDate)
-
                     self.__dictSpElemsByTd[nLoopDate].append(strStock)
                     # Next Date
                     dateLoopDate = dateTime.ToDateTime(nLoopDate)

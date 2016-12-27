@@ -110,3 +110,63 @@ class CWindDb(object):
             listStockIndustries.append(listRow)
         return listStockIndustries
 
+    def DBReqStockEODPrice(self, listStocks, strDateFrom = '', strDateTo = ''):
+        strSelect = "SELECT [S_INFO_WINDCODE],[TRADE_DT],[S_DQ_ADJOPEN],[S_DQ_ADJHIGH],[S_DQ_ADJLOW],[S_DQ_ADJCLOSE],[S_DQ_ADJPRECLOSE],[S_DQ_VOLUME],[S_DQ_AMOUNT] FROM [WindDB].[dbo].[ASHAREEODPRICES]"
+        strStockLimit = ''
+        if (len(listStocks) > 0):
+            strStockLimit = self.__GetStockLimit(listStocks, 'S_INFO_WINDCODE')
+        strDateLimit = ''
+        if (strDateFrom != '' and strDateTo != ''):
+            strDateLimit = self.__GetDateLimit(strDateFrom, strDateTo, 'TRADE_DT')
+        strWhereLimit = ''
+        print(strDateLimit)
+        print(strStockLimit)
+        if (strStockLimit != '' or strDateLimie != ''):
+            strWhereLimit = ' WHERE '
+            bNeedAnd = False
+            if (strStockLimit != ''):
+                strWhereLimit += '(' + strStockLimit + ')'
+                bNeedAnd = True
+            if (strDateLimit != ''):
+                if (bNeedAnd == True):
+                    strWhereLimit += 'AND'
+                strWhereLimit += '(' + strDateLimit + ')'
+        strSelect += strWhereLimit
+        sqlS = sqlServer.CSqlServer(self.__strHost, self.__strUser, self.__strPwd, self.__strDB)
+        listResult = sqlS.ExecQuery(strSelect)
+        return listResult
+
+    def __GetDateLimit(self, strDateFrom, strDateTo, strTableCol, strTablePrefix = ''):
+        if (strDateFrom == '' or strDateTo == '' or strTableCol == ''):
+            return ''
+
+        strDateFromFix = dateTime.ToIso(strDateFrom)
+        strDateToFix = dateTime.ToIso(strDateTo)
+        if (strDateFromFix > strDateToFix):
+            strDateFromFix = dateTime.ToIso(strDateTo)
+            strDateToFix = dateTime.ToIso(strDateFrom)
+        strRtn = '('
+        strRtn += strTablePrefix + strTableCol + " >= '" + strDateFromFix
+        strRtn += "') AND ("
+        strRtn += strTablePrefix + strTableCol + " <= '" + strDateToFix + "')"
+        return strRtn
+
+    def __GetStockLimit(self, listStocks, strTableCol, strTablePrefix = ''):
+        if (len(listStocks) == 0 or strTableCol == ''):
+            return ''
+        strRtn = ''
+        for strStock in listStocks:
+            strRtn += strTablePrefix + strTableCol + " = '" + strStock + "' OR "
+        if (len(strRtn) > 4):
+            strRtn = strRtn[0:-4]
+        return strRtn
+
+
+
+# wDb = CWindDb('10.63.6.100', 'ForOTC', 'otc12345678', 'WindDB')
+# listStocks = ['600000.SH', '000002.SZ']
+
+# listResult = wDb.DBReqStockEODPrice(listStocks, '20150101', '20151231')
+# for elem in listResult:
+#     print(elem)
+# wDb.GetDateLimit('20150101', '20151231', 'TRADE_DT', 't1.')
