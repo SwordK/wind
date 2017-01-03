@@ -42,6 +42,21 @@ class EU_StockSection(Enum):
     def ToInt(euSs):
         return int(euSs)
 
+def Ss2Sst(euSs):
+    if (isinstance(euSs, EU_StockSection) == False):
+        return EU_StockSectionType.euSst_None
+    elif (euSs == EU_StockSection.euSs_Pe or euSs == EU_StockSection.euSs_Pb or \
+        euSs == EU_StockSection.euSs_Pcf or euSs == EU_StockSection.euSs_Ps):
+        return EU_StockSectionType.euSst_Evaluation
+    elif (euSs == EU_StockSection.euSs_MarketValueTotal or euSs == EU_StockSection.euSs_MarketValueFlowing or \
+        euSs == EU_StockSection.euSs_MarketValueFlowingFree):
+        return EU_StockSectionType.euSst_MarketValue
+    elif (euSs == EU_StockSection.euSs_Qfa_yoynetprofit or euSs == EU_StockSection.euSs_Qfa_yoysales or \
+        euSs == EU_StockSection.euSs_Fa_yoyroe or euSs == EU_StockSection.euSs_Fa_yoyocf or euSs == EU_StockSection.euSs_Fa_yoy_equity):
+        return EU_StockSectionType.euSst_Growing
+    elif (euSs == EU_StockSection.euSs_Qfa_roe_deducted):
+        return EU_StockSectionType.euSst_Quality
+
 def GetSupportedSs():
     return 'pe|pb|pcf|ps|mv|dqmv|fdqmv|yoynetprofit|yoysales|yoyequity|yoyroe|yoyocf|roededucted'
 
