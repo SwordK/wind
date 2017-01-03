@@ -40,6 +40,8 @@ class CIndustryBaseInfoManager(object):
         if (isinstance(industryInst, CIndustryBaseInfo) == False):
             return False
         self.__dictIBaseInfos[industryInst.GetICode()] = industryInst
+        if (industryInst.GetLevel() not in self.__dictIBaseInfosByLevel):
+            self.__dictIBaseInfosByLevel[industryInst.GetLevel()] = {}
         self.__dictIBaseInfosByLevel[industryInst.GetLevel()][industryInst.GetICode()] = industryInst
         return True
 

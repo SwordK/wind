@@ -19,6 +19,24 @@ class EU_StockPoolType(Enum):
     euspt_ZZ500 = 500
     euspt_ZZ800 = 800
 
+def GetSupportedSp():
+    return 'SZ50|HS300|ZZ500|ZZ800|All'
+
+def GetStockPoolByStr(strInput):
+    if (strInput == 'SZ50'):
+        return EU_StockPoolType.euspt_SZ50
+    elif (strInput == 'HS300'):
+        return EU_StockPoolType.euspt_HS300
+    elif (strInput == 'ZZ500'):
+        return EU_StockPoolType.euspt_ZZ500
+    elif (strInput == 'ZZ800'):
+        return EU_StockPoolType.euspt_ZZ800
+    elif (strInput == 'All'):
+        return EU_StockPoolType.euspt_All
+    else:
+        return EU_StockPoolType.euspt_None
+
+
 # Functions
 def GetStockPoolWindCode(euspt):
     if (isinstance(euspt, EU_StockPoolType) == False):
@@ -93,8 +111,13 @@ class CStockPool(object):
 
     def GenerateTdIndex(self):
         nLoopIndex = 0
+        nShowPercent = 0
         for strStock, listElems in self.__dictSpElems.items():
-            print(nLoopIndex, '/', len(self.__dictSpElems))
+            nLoopPercent = int(nLoopIndex * 100 / len(self.__dictSpElems))
+            if (nShowPercent < nLoopPercent and nLoopPercent % 10 == 0):
+                nShowPercent = int(nLoopIndex * 100 / len(self.__dictSpElems))
+                print(str(nShowPercent) + '%')
+            # print(nLoopIndex, '/', len(self.__dictSpElems))
             nLoopIndex += 1
             for elem in listElems:
                 nInDate = elem.GetInDate()

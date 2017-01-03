@@ -42,6 +42,8 @@ class EU_StockSection(Enum):
     def ToInt(euSs):
         return int(euSs)
 
+def GetSupportedSs():
+    return 'pe|pb|pcf|ps|mv|dqmv|fdqmv|yoynetprofit|yoysales|yoyequity|yoyroe|yoyocf|roededucted'
 
 def SsFromString(strSs):
     if (strSs == ""):
