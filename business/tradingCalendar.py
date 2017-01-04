@@ -4,11 +4,12 @@
 # desc: 交易日历
 
 import sys;sys.path.append("../")
+import datetime
 import utils.dateTime as dateTime
 
 
 class CTradingCalendar(object):
-    __dictTc = {}
+    __dictTc = {}       # strExchange, set<int>
 
     def Empty(self):
         if (len(self.__dictTc) == 0):
@@ -30,18 +31,48 @@ class CTradingCalendar(object):
             return None
 
     def IsTradingDay(self, strExchange, tradingDay):
-        nTd = 0
-        if (isinstance(tradingDay,int)):
-            nTd = tradingDay
-        elif (dateTime.isValidDate_IsoExt(tradingDay)):
-            nTd = int(dateTime.DateFormat_IsoExt2Iso(tradingDay))
-            pass
-        elif (dateTime.isValidDate_Iso(tradingDay)):
-            nTd = int(tradingDay)
-            pass
-        else:
-            return False
-
         if (strExchange in self.__dictTc == False):
             return False
-        return nTd in self.__dictTc[strExchange]
+
+        strTd = dateTime.ToIso(tradingDay)
+        if (strTd == None):
+            return False
+        nTradingDay = int(strTd)
+        return nTradingDay in self.__dictTc[strExchange]
+
+
+    # [04.01.YYYY   ~ 05.01.YYYY)   -> 12.31.YYYY-1
+    # [05.01.YYYY   ~ 09.01.YYYY)   -> 03.31.YYYY
+    # [09.01.YYYY   ~ 11.01.YYYY)   -> 06.30.YYYY
+    # [11.01.YYYY   ~ 04.01.YYYY+1) -> 09.30.YYYY
+    @staticmethod
+    def GetStockReportPeriod(inputTradingDay):
+        dtTd = dateTime.ToDateTime(inputTradingDay)
+        dtInput = dtTd.date()
+        nYearInput = dtInput.year
+
+        dt0 = datetime.date(nYearInput - 1, 11, 1)
+        dt1 = datetime.date(nYearInput, 4, 1);
+        dt2 = datetime.date(nYearInput, 5, 1);
+        dt3 = datetime.date(nYearInput, 9, 1);
+        dt4 = datetime.date(nYearInput, 11, 1);
+        dt5 = datetime.date(nYearInput + 1, 4, 1);
+
+        dtRtn = None
+        if (dtInput >= dt0 and dtInput < dt1):
+            dtRtn = datetime.date(nYearInput - 1, 9, 30)
+        elif (dtInput >= dt1 and dtInput < dt2):
+            dtRtn = datetime.date(nYearInput - 1, 12, 31)
+        elif (dtInput >= dt2 and dtInput < dt3):
+            dtRtn = datetime.date(nYearInput, 3, 31)
+        elif (dtInput >= dt3 and dtInput < dt4):
+            dtRtn = datetime.date(nYearInput, 6, 30)
+        elif (dtInput >= dt4 and dtInput < dt5):
+            dtRtn = datetime.date(nYearInput, 9, 30)
+        return dtRtn
+
+
+    def Print(self):
+        for key in self.__dictTc.keys():
+            print('----- ', key, ' -----')
+            print(self.__dictTc[key])
