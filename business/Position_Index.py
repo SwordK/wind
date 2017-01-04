@@ -4,13 +4,13 @@
 # desc: 指数成分
 
 import sys;sys.path.append("../")
-
+import stockSection
 
 class CPosition_Index(object):
     def __init__(self):
         self.dtTradingday = ''      # TradingDay
         self.strInstrumentId = ''
-        self.nSSId = 0
+        self.euSs = stockSection.EU_StockSection.euSs_None
         self.dPosition = 0.0        # 总持仓数量
         self.dWeight = 0.0          # 比重
         self.dMarketValue = 0.0     # 总市值
@@ -23,7 +23,7 @@ class CPosition_Index(object):
         self.dGrade4 = 0.0
 
     def Print(self):
-        print(self.dtTradingday, self.strInstrumentId, self.nSSId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
+        print(self.dtTradingday, self.strInstrumentId, self.euSs, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
 
     def CalcPosition(self):
         if (self.dLastPrice == 0.0 or self.dMarketValue == 0.0):
@@ -47,6 +47,13 @@ class CPositionSet_Index(object):
         self.dictPositions = {}         # instrumentId -> CPosition_Index
         self.dTotalMarketValue = 0.0
         pass
+
+    def Add(self, pos):
+        if (isinstance(pos, CPosition_Index) == False):
+            return None
+        strWindCode = pos.GetStockWindCode()
+        self.dictPositions[strWindCode] = pos
+
 
     def CalcTotalMarketValue(self):
         dTotalMarketValue = 0.0
