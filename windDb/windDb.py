@@ -65,7 +65,7 @@ class CWindDb(object):
             return None
         strSelect += " where S_INFO_EXCHMARKET = '" + strExchange + "'"
         # Date Limitint Condition
-        if (strStartDateFix != '' and strEndDateFix != ''):
+        if (strStartDateFix != None and strEndDateFix != None):
             strSelect += "and (TRADE_DAYS >= '" + strStartDateFix
             strSelect += "' and TRADE_DAYS <= '" + strEndDateFix + "')"
 
