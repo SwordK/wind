@@ -53,14 +53,14 @@ def GetStockPoolWindCode(euspt):
 
 
 class CStockPoolElem(object):
-    def __init__(self, strStockWindCode, nInDate, nOutDate, nIsIn):
-        self.__strStockWindCode = strStockWindCode
+    def __init__(self, nStockId, nInDate, nOutDate, nIsIn):
+        self.__nStockId = nStockId
         self.__nInDate = nInDate
         self.__nOutDate = nOutDate
         self.__nIsIn = nIsIn
 
-    def GetStockWindCode(self):
-        return self.__strStockWindCode
+    def GetStockId(self):
+        return self.__nStockId
     def GetInDate(self):
         return self.__nInDate
     def GetOutDate(self):
@@ -70,8 +70,8 @@ class CStockPoolElem(object):
 class CStockPool(object):
     def __init__(self, euSpt):
         self.__euSpt = euSpt
-        self.__dictSpElems = {}         # StockId -> list<CStockPoolElem>
-        self.__dictSpElemsByTd = {}     # tradingDay -> list<StockId>
+        self.__dictSpElems = {}         # nStockId -> list<CStockPoolElem>
+        self.__dictSpElemsByTd = {}     # tradingDay -> list<nStockId>
 
     def GetType(self):
         return self.__euSpt
@@ -103,22 +103,24 @@ class CStockPool(object):
     def AddElem(self, spElem):
         if (isinstance(spElem, CStockPoolElem) == False):
             return False
-        strWindCode = spElem.GetStockWindCode()
-        if ((strWindCode in self.__dictSpElems.keys()) == False):
-            self.__dictSpElems[strWindCode] = list()
-        self.__dictSpElems[strWindCode].append(spElem)
+        nStockId = spElem.GetStockId()
+        if ((nStockId in self.__dictSpElems.keys()) == False):
+            self.__dictSpElems[nStockId] = list()
+        self.__dictSpElems[nStockId].append(spElem)
         return True
 
     def GenerateTdIndex(self):
+        print('CStockPoolManager.GenerateTdIndex() ...')
         nLoopIndex = 0
         nShowPercent = 0
-        for strStock, listElems in self.__dictSpElems.items():
+        for nStockId, listElems in self.__dictSpElems.items():
             nLoopPercent = int(nLoopIndex * 100 / len(self.__dictSpElems))
             if (nShowPercent < nLoopPercent and nLoopPercent % 10 == 0):
                 nShowPercent = int(nLoopIndex * 100 / len(self.__dictSpElems))
                 print(str(nShowPercent) + '%')
             # print(nLoopIndex, '/', len(self.__dictSpElems))
             nLoopIndex += 1
+
             for elem in listElems:
                 nInDate = elem.GetInDate()
                 nOutDate = elem.GetOutDate()
@@ -127,7 +129,7 @@ class CStockPool(object):
                 while (nLoopDate <= nOutDate):
                     if ((nLoopDate in self.__dictSpElemsByTd) == False):
                         self.__dictSpElemsByTd[nLoopDate] = list()
-                    self.__dictSpElemsByTd[nLoopDate].append(strStock)
+                    self.__dictSpElemsByTd[nLoopDate].append(nStockId)
                     # Next Date
                     dateLoopDate = dateTime.ToDateTime(nLoopDate)
                     dateTomorrow = dateLoopDate + datetime.timedelta(days=1)
