@@ -114,7 +114,7 @@ def DBReqStockEODPrice(strHost, strUser, strPwd, strDb, listStocks, strDateFrom 
         if (len(row) != 9):
             continue
         # print(row)
-        dtTd = dateTime.ToDate(row[1])
+        dtTd = dateTime.ToDateTime(row[1])
         if (dtTd == None):
             print('DBReqStockEODPrice.tradingDay error: ', row)
         mdbarData = mdBar.CMdBarData(mdBar.EU_MdBarInterval.mdbi_1d, float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]), float(row[8]), dtTd)
