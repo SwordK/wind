@@ -12,6 +12,9 @@ Usage:
 '''
 
 def StockWindCode2Int(strWindCode):
+    if (isinstance(strWindCode, int)):
+        return strWindCode
+
     listCodes = strWindCode.split('.')
     if (len(listCodes) != 2):
         return None
@@ -28,6 +31,8 @@ def StockWindCode2Int(strWindCode):
     return nId
 
 def Int2StockWindCode(nId):
+    if (isinstance(nId, str)):
+        return nId
     strWindCode = ''
     if (nId >= 1000000):
         strWindCode = '%06d' % (nId - 1000000) + '.SH'
