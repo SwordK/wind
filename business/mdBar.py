@@ -4,10 +4,11 @@
 # desc: 行情K线
 
 import sys;sys.path.append("../")
-
-from enum import Enum
-import business.stockCn as stockCn
 import time
+from enum import Enum
+
+import business.stockCn as stockCn
+import utils.dateTime as dateTime
 
 # Enum
 class EU_MdBarInterval(Enum):
@@ -68,12 +69,45 @@ class CMdBarDataManager(object):
         self.__dictMdBarData[euMdBi][nStockId][dtDateTime] = mdBarData
         return True
 
+    def GetPrice(self, euMdbi, strStockWindCode, strTradingDay):
+        dtDateTime = dateTime.ToDateTime(strTradingDay)
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        if (self.__IsIn(euMdbi, strStockWindCode, strTradingDay) == False):
+            return None
+        return self.__dictMdBarData[euMdbi][nStockId][dtDateTime].GetPrice()
+
+    def GetVolume(self, euMdbi, strStockWindCode, strTradingDay):
+        dtDateTime = dateTime.ToDateTime(strTradingDay)
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        if (self.__IsIn(euMdbi, strStockWindCode, strTradingDay) == False):
+            return None
+        return self.__dictMdBarData[euMdbi][nStockId][dtDateTime].GetVolume()
+
     def Print(self):
         for key1 in self.__dictMdBarData.keys():
             for key2 in self.__dictMdBarData[key1].keys():
                 for key3 in self.__dictMdBarData[key1][key2].keys():
                     print(key1, key2, key3, self.__dictMdBarData[key1][key2][key3].GetInterval(), self.__dictMdBarData[key1][key2][key3].GetPrice())
-        pass
+
+    def __IsIn(self, euMdbi, strStockWindCode, strTradingDay):
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        if (nStockId == None):
+            print('nStockId is None')
+            return False
+        dtDateTime = dateTime.ToDateTime(strTradingDay)
+        if (dtDateTime == None):
+            print('dtDateTime is None')
+            return False
+        if (euMdbi not in self.__dictMdBarData.keys()):
+            print('euMdbi is not in: ', euMdi, self.__dictMdBarData.keys())
+            return False
+        if (nStockId not in self.__dictMdBarData[euMdbi].keys()):
+            print('nStockId is not in: ', nStockId, self.__dictMdBarData[euMdbi].keys())
+            return False
+        if (dtDateTime not in self.__dictMdBarData[euMdbi][nStockId].keys()):
+            print('dtDateTime is not in: ', dtDateTime, self.__dictMdBarData[euMdbi][nStockId].keys())
+            return False
+        return True
 
 # print(time.strftime("%Y-%m-%d", time.localtime(time.time())))
 # print(time.time())

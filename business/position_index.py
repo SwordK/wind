@@ -4,6 +4,7 @@
 # desc: 指数成分
 
 import sys;sys.path.append("../")
+import business.mdBar as mdBar
 
 class CPosition_Index(object):
     def __init__(self):
@@ -40,6 +41,13 @@ class CPosition_Index(object):
         self.dMarketValue = self.dLastPrice * self.dPosition
         return self.dMarketValue
 
+    def FlushMd(self):
+        mdBarMgr = mdBar.CMdBarDataManager()
+        listPrice = mdBarMgr.GetPrice(mdBar.EU_MdBarInterval.mdbi_1d, self.nStockId, self.dtTradingDay)
+        if (listPrice == None or len(listPrice) == 0):
+            return False
+        self.dLastPrice = listPrice[3]
+
 
 class CPositionSet_Index(object):
     def __init__(self):
@@ -53,6 +61,9 @@ class CPositionSet_Index(object):
         nInstId = pos.nStockId
         self.dictPositions[nInstId] = pos
 
+    def SetPosTradingDay(self, dtTradingDay):
+        for key in self.dictPositions.keys():
+            self.dictPositions[key].dtTradingDay = dtTradingDay
 
     def CalcTotalMarketValue(self):
         dTotalMarketValue = 0.0
@@ -63,10 +74,6 @@ class CPositionSet_Index(object):
         self.dTotalMarketValue = dTotalMarketValue
         return dTotalMarketValue
 
-    def SetPosTradingDay(self, dtTradingDay):
-        for key in self.dictPositions.keys():
-            self.dictPositions[key].dtTradingDay = dtTradingDay
-
     def CalcPosPosition(self):
         for key in self.dictPositions.keys():
             self.dictPositions[key].CalcPosition()
@@ -75,8 +82,12 @@ class CPositionSet_Index(object):
         for key in self.dictPositions.keys():
             self.dictPositions[key].CalcPosWeight(self.dTotalMarketValue)
 
+    def FlushMd(self):
+        for key in self.dictPositions.keys():
+            self.dictPositions[key].FlushMd()
+
     def Print(self):
-        print(self.dTotalMarketValue)
+        print(len(self.dictPositions), self.dTotalMarketValue)
         for key in self.dictPositions.keys():
             self.dictPositions[key].Print()
 
