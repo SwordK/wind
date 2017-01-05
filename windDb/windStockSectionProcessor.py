@@ -8,7 +8,214 @@ import getopt
 import business.tradingCalendar as tc
 import business.stockPool as stockPool
 import business.stockSection as stockSection
+import business.position_index as indexPosition
+import business.tradingCalendar as tCal
+import business.industry as industry
 import windDbBusiness
+import utils.dateTime as dateTime
+
+
+# @return: dictRtnGroups: groupId -> set<CStockSectionElem>
+def SortingGroup(setInput, nGroupSize, nGroupBaseId, bMore2Less = True):
+    if (len(setInput) == 0 or nGroupSize <= 0):
+        return None
+    setSortedInput = sorted(setInput)
+
+    dictRtnGroups = {}              # groupId -> set<CStockSectionElem>
+    nSetInputSize = len(setSortedInput)
+    if (nGroupSize > nSetInputSize):
+        for nIndex in range(0, nGroupSize):
+            dictRtnGroups[nIndex + nGroupBaseId] = set()
+            dictRtnGroups[nIndex + nGroupBaseId] = setSortedInput
+    else:
+        nRemainder = nSetInputSize % nGroupSize
+        nAverageSize = 0
+        if (nRemainder == 0 or bMore2Less == False):
+            nAverageSize = int(nSetInputSize / nGroupSize)
+        else:
+            nAverageSize = int(nSetInputSize / nGroupSize) + 1
+
+        nLoopSize = 0;
+        nGroupId = nGroupBaseId
+        for item in setSortedInput:
+            if (nGroupId not in dictRtnGroups.keys()):
+                dictRtnGroups[nGroupId] = set()
+            dictRtnGroups[nGroupId].add(item)
+
+            nLoopSize += 1
+            if (nLoopSize >= nAverageSize):
+                nLoopSize = 0
+                if (bMore2Less == True):
+                    if (nGroupId - nGroupBaseId == nRemainder - 1):
+                        nAverageSize -= 1
+                else:
+                    if (nGroupId == nGroupSize - nRemainder - 1):
+                        nAverageSize += 1
+                nGroupId += 1
+    return dictRtnGroups
+
+# @param:  dictGroupFunds: groupid -> dFunds
+#          nGroupSize:
+#          dictInsts: nStockId -> CStockSectionElem
+#          dtTradingDay
+# @return: dictPositions: groupId -> CPositionSet_Index
+def AdjustPortfolios(dictGroupFunds, nGroupSize, dictInsts, dtTradingDay):
+    if (len(dictGroupFunds) == 0 or nGroupSize <= 0 or len(dictInsts) == 0):
+        return None
+
+    listGroupFundsKeys = sorted(dictGroupFunds.keys())
+    nGroupBaseId = listGroupFundsKeys[0]
+    dFundTotal = 0.0
+    for key in listGroupFundsKeys:
+        dFundTotal += dictGroupFunds[key]
+
+    setSections = set()
+    for key in dictInsts.keys():
+        setSections.add(dictInsts[key])
+    sortedListSections = sorted(setSections)
+    nTradingDay = int(dateTime.ToIso(dtTradingDay))
+
+    dictICode2Index = {}
+    for item in sortedListSections:
+        strStock = item.GetStockId()
+        strICode = '-'
+        # 行业中性判断
+        if (strICode == ''):
+            continue
+
+        if (strICode not in dictICode2Index.keys()):
+            dictICode2Index[strICode] = set()
+        dictICode2Index[strICode].add(item)
+
+    # 分组
+    dictGroupsByIndustry = {}       # 行业 -> 分组 -> set<股票>
+    for itemICode in dictICode2Index:
+        dictRtn = SortingGroup(dictICode2Index[itemICode], nGroupSize, nGroupBaseId)
+        if (dictRtn != None):
+            if (itemICode not in dictGroupsByIndustry.keys()):
+                dictGroupsByIndustry[itemICode] = {}
+            dictGroupsByIndustry[itemICode] = dictRtn
+
+    nIndustrySize = len(dictGroupsByIndustry)
+    if (nIndustrySize <= 0):
+        return None
+
+    # 调整分组并分配资金
+    dictPositions = {}              # groupId -> CPositionSet_Index
+    for keyGroupId in listGroupFundsKeys:
+        if (keyGroupId not in dictPositions.keys()):
+            dictPositions[keyGroupId] = indexPosition.CPositionSet_Index()
+        dictPositions[keyGroupId].dTotalMarketValue = dictGroupFunds[keyGroupId]
+        dFundAverage_Industry = dictPositions[keyGroupId].dTotalMarketValue / nIndustrySize
+        for itemICode in dictGroupsByIndustry.keys():
+            if (keyGroupId not in dictGroupsByIndustry[itemICode].keys()):
+                print('keyGroupId not in dictGroupsByIndustry[itemICode].keys()', keyGroupId)
+                continue
+            if (len(dictGroupsByIndustry[itemICode][keyGroupId]) <= 0):
+                print('len(dictGroupsByIndustry[itemICode][keyGroupId]) <= 0')
+                continue
+            dFundAverage_Stock = dFundAverage_Industry / len(dictGroupsByIndustry[itemICode][keyGroupId])
+            print(len(dictGroupsByIndustry[itemICode][keyGroupId]), dFundAverage_Stock)
+
+            for item in dictGroupsByIndustry[itemICode][keyGroupId]:
+                pos = indexPosition.CPosition_Index()
+                pos.dtTradingDay = nTradingDay
+                pos.nStockId = item.GetStockId()
+                pos.nSsId = keyGroupId
+                pos.dMarketValue = dFundAverage_Stock
+                dictPositions[keyGroupId].Add(pos)
+                pass
+    if (len(dictPositions) == 0):
+        return None
+    return dictPositions
+
+
+def AdjustPosition(stockPoolInst, dictGroupFunds, dtTradingDay, euSs, nGroupSize, dFundTotal, euInt = industry.EU_IndustrialNeutralType.euInt_None):
+    if (nGroupSize <= 0):
+        print('nGroupSize <= 0: ', nGroupSize)
+        return None
+    if (isinstance(stockPoolInst, stockPool.CStockPool) == False):
+        print('stockPoolInst is not instance of CStockPool')
+        return None
+    if (isinstance(euSs, stockSection.EU_StockSection) == False):
+        print('euSst is not instance of EU_StockSectionType')
+        return None
+    if (isinstance(euInt, industry.EU_IndustrialNeutralType) == False):
+        print('euInt is not instance of EU_IndustrialNeutralType')
+        return None
+    listStocks = stockPoolInst.GetStocksByTd(dtTradingDay)
+    if (listStocks == None or len(listStocks) <= 0):
+        print('stockPoolInst.GetStocksByTd return empty')
+        return None
+
+    euSst = stockSection.Ss2Sst(euSs)
+    dtSection = dateTime.ToDateTime(dtTradingDay).date()
+
+    # 季报因子
+    if (euSst == stockSection.EU_StockSectionType.euSst_Growing or euSst == stockSection.EU_StockSectionType.euSst_Quality):
+        dtSection = tCal.CTradingCalendar.GetStockReportPeriod(dtTradingDay)
+
+    # 分配因子
+    dictSectionInfo = {}        # nStockId -> CStockSectionElem
+    ssMgr = stockSection.CStockSectionRecordsManager()
+    for nStockId in listStocks:
+        dSectionValue = ssMgr.GetStockSectionValue(euSs, nStockId, dtSection)
+        if (dSectionValue == None):
+            continue
+        ssElem = stockSection.CStockSectionElem(nStockId, dtSection, euSs, dSectionValue)
+        dictSectionInfo[nStockId] = ssElem
+
+    # dictGroupFunds = {}         # nGroupId -> dFund
+    # nGroupBaseId = 0
+    # for nIndex in range(nGroupBaseId, nGroupBaseId + nGroupSize):
+    #     nGroupId = nIndex + 1
+    #     dictGroupFunds[nGroupId] = dFundTotal / nGroupSize
+
+    dictPositions = {}          # groupId -> CPositionSet_Index
+    dictPositions = AdjustPortfolios(dictGroupFunds, nGroupSize, dictSectionInfo, dtTradingDay)
+    if (dictPositions == None or len(dictPositions) <= 0):
+        return None
+    for key in dictPositions.keys():
+        dictPositions[key].FlushMd()
+        dictPositions[key].CalcPosPosition()
+        dictPositions[key].Print()
+
+    return dictPositions
+
+
+def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
+    nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, euSs, strIndustrialNeutral):
+
+    print('DBReqTradingCalendar ...')
+    windDbBusiness.DBReqTradingCalendar(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
+    tcInst = tc.CTradingCalendar()
+
+    print('DBReqIndustries_ZX ...')
+    windDbBusiness.DBReqIndustries_ZX(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
+
+    print('DBReqStockPool ...')
+    if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt)):
+        print('DBReqStockPool Failed ...')
+        sys.exit(3)
+
+    spManager = stockPool.CStockPoolManager()
+    spInst = spManager.GetStockPool(euSpt)
+    setStocks = spInst.GetStocksByDatePeriod(strBeginDate, strEndDate)
+    print(setStocks)
+
+    print('DBReqStockEODPrice ...')
+    windDbBusiness.DBReqStockEODPrice(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, setStocks, strBeginDate, strEndDate)
+
+    print('DBReqStockSections ...')
+    euSst = stockSection.Ss2Sst(euSs)
+    windDbBusiness.DBReqStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSst, setStocks, strBeginDate, strEndDate)
+
+    dFundTotal = 1000.0
+    dictFunds = {}
+    dictFunds[1] = 1023.7
+    dictFunds[2] = 1042.3
+    print(AdjustPosition(spInst, dictFunds, strBeginDate, euSs, nGroupSize, dFundTotal))
+    pass
 
 
 # @return: dateinterval, groupsize, begindate, enddate, stockpool, stocksection, industrialneutral
@@ -99,43 +306,6 @@ def ParseOpts(strAppName, argv):
         sys.exit(2)
     return nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, euSs, strIndustrialNeutral
 
-def AdjustPosition(stockPoolInst, dtTradingDay, euSst, dFundTotal):
-    if (isinstance(stockPoolInst, stockPool.CStockPool) == False):
-        print('stockPoolInst is not instance of CStockPool')
-        return False
-
-
-
-
-def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
-    nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, euSs, strIndustrialNeutral):
-
-    print('DBReqTradingCalendar ...')
-    windDbBusiness.DBReqTradingCalendar(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
-    tcInst = tc.CTradingCalendar()
-
-    print('DBReqIndustries_ZX ...')
-    windDbBusiness.DBReqIndustries_ZX(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
-
-    print('DBReqStockPool ...')
-    if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt)):
-        print('DBReqStockPool Failed ...')
-        sys.exit(3)
-
-    spManager = stockPool.CStockPoolManager()
-    spInst = spManager.GetStockPool(euSpt)
-    setStocks = spInst.GetStocksByDatePeriod(strBeginDate, strEndDate)
-
-    print('DBReqStockEODPrice ...')
-    windDbBusiness.DBReqStockEODPrice(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, setStocks, strBeginDate, strEndDate)
-
-    print('DBReqStockSections ...')
-    euSst = stockSection.Ss2Sst(euSs)
-    windDbBusiness.DBReqStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSst, setStocks, strBeginDate, strEndDate)
-
-    pass
-
-
 
 def main(listArgs):
     listParams = ParseOpts(listArgs[0], listArgs[1:])
@@ -157,5 +327,4 @@ def main(listArgs):
 
 if __name__ == '__main__':
     main(sys.argv)
-
 
