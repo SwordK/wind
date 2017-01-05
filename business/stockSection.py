@@ -6,6 +6,7 @@
 import sys;sys.path.append("../")
 from enum import Enum
 import business.stockCn as stockCn
+import utils.dateTime as dateTime
 
 # Enum
 class EU_StockSectionType(Enum):
@@ -38,9 +39,6 @@ class EU_StockSection(Enum):
 
     euSs_Qfa_roe_deducted = 31          # ROE(单季度)
 
-    @staticmethod
-    def ToInt(euSs):
-        return int(euSs)
 
 def Ss2Sst(euSs):
     if (isinstance(euSs, EU_StockSection) == False):
@@ -107,7 +105,7 @@ class CStockSectionElem(object):
     def __eq__(self, rhs):
         return self.__dValue == rhs.GetValue() and self.__nStockId == rhs.GetStockId() and self.__nTradingDay == rhs.GetTradingDay() and self.__euSs == rhs.GetSectionId()
     def __hash__(self):
-        return hash(self.__nStockId + " " + str(self.__nTradingDay) + " " + str(self.__euSs.value) + " " + str(self.__dValue))
+        return hash(str(self.__nStockId) + " " + str(self.__nTradingDay) + " " + str(self.__euSs.value) + " " + str(self.__dValue))
 
     def GetStockId(self):
         return self.__nStockId
@@ -202,44 +200,51 @@ class CStockSectionRecordsManager(object):
         return True
 
 
-    def GetStockSectionValue(self, euSs, strStockWindCode, nTradingDay):
+    def GetStockSectionValue(self, euSs, strStockWindCode, dtTradingDay):
         if (isinstance(euSs, EU_StockSection) == False):
+            print('GetStockSectionValue: euSs is not instance of EU_StockSection: ', euSs)
             return None
         nStockId = strStockWindCode
         if (isinstance(strStockWindCode, str) == True):
             nStockId = stockCn.StockWindCode2Int(strStockWindCode)
         if (nStockId == None):
+            print('GetStockSectionValue: strStockWindCode Error: ', nStockId)
             return None
+        nTradingDay = int(dateTime.ToIso(dtTradingDay))
+        if (nTradingDay == None):
+            print('GetStockSectionValue: dtTradingDay Error: ', dtTradingDay)
         if (nTradingDay not in self.__dictStockSectionsByTd.keys()):
+            print('GetStockSectionValue: nTradingDay is not in : ', nTradingDay)
             return None
         if (nStockId not in self.__dictStockSectionsByTd[nTradingDay].keys()):
+            print('GetStockSectionValue: nStockId is not in : ', nStockId)
             return None
 
         dValue = None
-        if (euSs == euSs_Pe):
-            dValue = self.dPe
-        elif (euSs == euSs_Pb):
-            dValue = self.dPb
-        elif (euSs == euSs_Pcf):
-            dValue = self.dPcf
-        elif (euSs == euSs_Ps):
-            dValue = self.dPs
-        elif (euSs == euSs_MarketValueTotal):
-            dValue = self.d_val_mv
-        elif (euSs == euSs_MarketValueFlowing):
-            dValue = self.d_dq_mv
-        elif (euSs == euSs_MarketValueFlowingFree):
-            dValue = self.d_freefloat_mv
-        elif (euSs == euSs_Qfa_yoynetprofit):
-            dValue = self.d_qfa_yoynetprofit
-        elif (euSs == euSs_Qfa_yoysales):
-            dValue = self.d_qfa_yoysales
-        elif (euSs == euSs_Fa_yoyroe):
-            dValue = self.d_fa_yoyroe
-        elif (euSs == euSs_Fa_yoyocf):
-            dValue = self.d_fa_yoyocf
-        elif (euSs == euSs_Fa_yoy_equity):
-            dValue = self.d_fa_yoy_equity
+        if (euSs == EU_StockSection.euSs_Pe):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].dPe
+        elif (euSs == EU_StockSection.euSs_Pb):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].dPb
+        elif (euSs == EU_StockSection.euSs_Pcf):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].dPcf
+        elif (euSs == EU_StockSection.euSs_Ps):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].dPs
+        elif (euSs == EU_StockSection.euSs_MarketValueTotal):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_val_mv
+        elif (euSs == EU_StockSection.euSs_MarketValueFlowing):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_dq_mv
+        elif (euSs == EU_StockSection.euSs_MarketValueFlowingFree):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_freefloat_mv
+        elif (euSs == EU_StockSection.euSs_Qfa_yoynetprofit):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoynetprofit
+        elif (euSs == EU_StockSection.euSs_Qfa_yoysales):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoysales
+        elif (euSs == EU_StockSection.euSs_Fa_yoyroe):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyroe
+        elif (euSs == EU_StockSection.euSs_Fa_yoyocf):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyocf
+        elif (euSs == EU_StockSection.euSs_Fa_yoy_equity):
+            dValue = self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoy_equity
         return dValue
 
     def GetStockSectionElem(self, euSs, nStockId, nTradingDay):
@@ -265,5 +270,4 @@ class CStockSectionRecordsManager(object):
                     , self.__dictStockSectionsByTd[nTd][nStockId].d_fa_yoy_equity \
                     , self.__dictStockSectionsByTd[nTd][nStockId].d_fa_yoyroe \
                     , self.__dictStockSectionsByTd[nTd][nStockId].d_fa_yoyocf)
-
 
