@@ -87,7 +87,7 @@ class CStockPool(object):
             return None
 
     # @param
-    # @return: set<Stocks>
+    # @return: set<nStockId>
     def GetStocksByDatePeriod(self, dtFrom, dtTo):
         dtPeriod = dateTime.CDatePeriod(dtFrom, dtTo)
         setRtn = set()
