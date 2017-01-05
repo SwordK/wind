@@ -4,13 +4,12 @@
 # desc: 指数成分
 
 import sys;sys.path.append("../")
-import stockSection
 
 class CPosition_Index(object):
     def __init__(self):
-        self.dtTradingday = ''      # TradingDay
-        self.strInstrumentId = ''
-        self.euSs = stockSection.EU_StockSection.euSs_None
+        self.dtTradingDay = ''      # TradingDay
+        self.nStockId = None
+        self.nSsId = 0
         self.dPosition = 0.0        # 总持仓数量
         self.dWeight = 0.0          # 比重
         self.dMarketValue = 0.0     # 总市值
@@ -23,7 +22,7 @@ class CPosition_Index(object):
         self.dGrade4 = 0.0
 
     def Print(self):
-        print(self.dtTradingday, self.strInstrumentId, self.euSs, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
+        print(self.dtTradingDay, self.nStockId, self.nSsId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
 
     def CalcPosition(self):
         if (self.dLastPrice == 0.0 or self.dMarketValue == 0.0):
@@ -51,8 +50,8 @@ class CPositionSet_Index(object):
     def Add(self, pos):
         if (isinstance(pos, CPosition_Index) == False):
             return None
-        strWindCode = pos.GetStockWindCode()
-        self.dictPositions[strWindCode] = pos
+        nInstId = pos.nStockId
+        self.dictPositions[nInstId] = pos
 
 
     def CalcTotalMarketValue(self):
@@ -64,9 +63,9 @@ class CPositionSet_Index(object):
         self.dTotalMarketValue = dTotalMarketValue
         return dTotalMarketValue
 
-    def SetPosTradingDay(self, dtTradingday):
+    def SetPosTradingDay(self, dtTradingDay):
         for key in self.dictPositions.keys():
-            self.dictPositions[key].dtTradingday = dtTradingday
+            self.dictPositions[key].dtTradingDay = dtTradingDay
 
     def CalcPosPosition(self):
         for key in self.dictPositions.keys():
@@ -77,22 +76,23 @@ class CPositionSet_Index(object):
             self.dictPositions[key].CalcPosWeight(self.dTotalMarketValue)
 
     def Print(self):
+        print(self.dTotalMarketValue)
         for key in self.dictPositions.keys():
             self.dictPositions[key].Print()
 
 # pos1 = CPosition_Index()
 # pos1.dMarketValue = 1000.0
-# pos1.strInstrumentId = 'aaaaaa'
+# pos1.nStockId = 'aaaaaa'
 # pos1.dLastPrice = 13.2
 #
 # pos2 = CPosition_Index()
 # pos2.dMarketValue = 1003.0
-# pos2.strInstrumentId = 'bbbbbb'
+# pos2.nStockId = 'bbbbbb'
 # pos2.dLastPrice = 24.4
 #
 # posset = CPositionSet_Index()
-# posset.dictPositions[pos1.strInstrumentId] = pos1
-# posset.dictPositions[pos2.strInstrumentId] = pos2
+# posset.dictPositions[pos1.nStockId] = pos1
+# posset.dictPositions[pos2.nStockId] = pos2
 #
 # posset.CalcPosPosition()
 # posset.SetPosTradingDay('20120101')
