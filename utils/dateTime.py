@@ -60,23 +60,45 @@ def DateFormat_IsoExt2Iso(strIsoExt):
     return strRtn
 
 
-# ------------------------------------------------------------------------------
-def ToDate(inputDate):
+# ##############################################################################
+# @param: inputDate: [int/iso/isoext]
+def ToDateTime(inputDate):
     dtDate = None
     strDate = ''
     if (isinstance(inputDate, datetime.datetime) == True):
-        dtDate = inputDate.date()
-    elif (isinstance(inputDate, datetime.date) == True):
         dtDate = inputDate
+    elif (isinstance(inputDate, datetime.date) == True):
+        dtDate = datetime.datetime.combine(inputDate, datetime.time())
     elif (isinstance(inputDate, int) == True or isinstance(inputDate, str) == True):
         strDate = str(inputDate)
         bCheck, timeArray = isValidDate(strDate)
         if (bCheck == False or timeArray == None):
             return None
-        dtDate = timeArray.date()
+        dtDate = timeArray
     else:
         return None
     return dtDate
+    '''
+    strDate = inputDate
+    if (isinstance(inputDate, int)):
+        strDate = str(inputDate)
+
+    if (strDate != ''):
+        if (isValidDate_IsoExt(strDate)):
+            return datetime.datetime.strptime(strDate, "%Y-%m-%d")
+        elif (isValidDate_Iso(strDate)):
+            return datetime.datetime.strptime(strDate, "%Y%m%d")
+        else:
+            return None
+    '''
+
+# ------------------------------------------------------------------------------
+def ToDate(inputDate):
+    dtDateTime = ToDateTime(inputDate)
+    if (dtDateTime == None):
+        return None
+    return dtDateTime.date()
+
 
 # @param: inputDate: [datetime.date/int/iso/isoext]
 def ToIso(inputDate):
@@ -95,21 +117,6 @@ def ToIsoExt(inputDate):
     strRtn = "%04d-%02d-%02d" % (dtRtn.year, dtRtn.month, dtRtn.day)
     return strRtn
 
-
-# ##############################################################################
-# @param: inputDate: [int/iso/isoext]
-def ToDateTime(inputDate):
-    strDate = inputDate
-    if (isinstance(inputDate, int)):
-        strDate = str(inputDate)
-
-    if (strDate != ''):
-        if (isValidDate_IsoExt(strDate)):
-            return datetime.datetime.strptime(strDate, "%Y-%m-%d")
-        elif (isValidDate_Iso(strDate)):
-            return datetime.datetime.strptime(strDate, "%Y%m%d")
-        else:
-            return None
 
 # @param: inputDate: [int/iso/isoext]
 # @return: iso date
