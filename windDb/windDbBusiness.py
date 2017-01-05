@@ -173,7 +173,7 @@ def DBReqStockSections(strHost, strUser, strPwd, strDb, euSst, listStocks, strDa
                 if (row[6] != None):
                     d_fa_yoyocf = float(row[6])
                 ssMgr.AddValue2(row[0], int(row[1]), d_qfa_yoynetprofit, d_qfa_yoysales, d_fa_yoy_equity, d_fa_yoyroe, d_fa_yoyocf)
-    ssMgr.Print()
+    # ssMgr.Print()
     return True
 # } end of DBReqStockSections
 
