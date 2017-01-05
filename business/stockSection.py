@@ -96,8 +96,8 @@ def SsFromString(strSs):
 
 
 class CStockSectionElem(object):
-    def __init__(self, strStockWindCode, nTradingDay, euSs, dSectionValue):
-        self.__strStockWindCode = strStockWindCode
+    def __init__(self, nStockId, nTradingDay, euSs, dSectionValue):
+        self.__nStockId = nStockId
         self.__nTradingDay = nTradingDay
         self.__euSs = euSs
         self.__dValue = dSectionValue
@@ -105,13 +105,15 @@ class CStockSectionElem(object):
     def __lt__(self, rhs):
         return self.__dValue < rhs.GetValue()
     def __eq__(self, rhs):
-        return self.__dValue == rhs.GetValue()
+        return self.__dValue == rhs.GetValue() and self.__nStockId == rhs.GetStockId() and self.__nTradingDay == rhs.GetTradingDay() and self.__euSs == rhs.GetSectionId()
+    def __hash__(self):
+        return hash(self.__nStockId + " " + str(self.__nTradingDay) + " " + str(self.__euSs.value) + " " + str(self.__dValue))
 
-    def GetStockWindCode(self):
-        return self.__strStockWindCode
+    def GetStockId(self):
+        return self.__nStockId
     def GetTradingDay(self):
         return self.__nTradingDay
-    def GetStcionId(self):
+    def GetSectionId(self):
         return self.__euSs
     def GetValue(self):
         return self.__dValue
@@ -125,22 +127,22 @@ class CStockSectionElem(object):
 
 class CStockSectionRecord(object):
     def __init__(self):
-        self.dPe = 0.0                  # 市盈率
-        self.dPb = 0.0                  # 市净率
-        self.dPcf = 0.0                 # 市现率
-        self.dPs = 0.0                  # 市销率
+        self.dPe = None                  # 市盈率
+        self.dPb = None                  # 市净率
+        self.dPcf = None                 # 市现率
+        self.dPs = None                  # 市销率
 
-        self.d_val_mv = 0.0             # 总市值
-        self.d_dq_mv = 0.0              # 流通市值
+        self.d_val_mv = None             # 总市值
+        self.d_dq_mv = None              # 流通市值
         self.d_freefloat_mv = None      # 自由流通市值
-        self.d_freeshared_today = 0.0
+        self.d_freeshared_today = None
 
-        self.d_qfa_yoynetprofit = 0.0   # 归属母公司净利润增长率（季度同比）
-        self.d_qfa_yoysales = 0.0       # 营业收入增长率（季度同比）
+        self.d_qfa_yoynetprofit = None   # 归属母公司净利润增长率（季度同比）
+        self.d_qfa_yoysales = None       # 营业收入增长率（季度同比）
 
-        self.d_fa_yoy_equity = 0.0      # 净资产同比增长率
-        self.d_fa_yoyroe = 0.0          # 净资产收益率增长率
-        self.d_fa_yoyocf = 0.0          # 现金流增长率
+        self.d_fa_yoy_equity = None      # 净资产同比增长率
+        self.d_fa_yoyroe = None          # 净资产收益率增长率
+        self.d_fa_yoyocf = None          # 现金流增长率
 
         # self.d_qfa_roe_deducted = 0.0   # ROE(单季度)
 
@@ -200,17 +202,20 @@ class CStockSectionRecordsManager(object):
         return True
 
 
-    def GetStockSectionElem(self, euSs, strStockWindCode, nTradingDay):
+    def GetStockSectionValue(self, euSs, strStockWindCode, nTradingDay):
         if (isinstance(euSs, EU_StockSection) == False):
-            return False
-        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+            return None
+        nStockId = strStockWindCode
+        if (isinstance(strStockWindCode, str) == True):
+            nStockId = stockCn.StockWindCode2Int(strStockWindCode)
         if (nStockId == None):
-            return False
+            return None
         if (nTradingDay not in self.__dictStockSectionsByTd.keys()):
-            return False
+            return None
         if (nStockId not in self.__dictStockSectionsByTd[nTradingDay].keys()):
-            return False
-        dValue = 0.0
+            return None
+
+        dValue = None
         if (euSs == euSs_Pe):
             dValue = self.dPe
         elif (euSs == euSs_Pb):
@@ -235,5 +240,30 @@ class CStockSectionRecordsManager(object):
             dValue = self.d_fa_yoyocf
         elif (euSs == euSs_Fa_yoy_equity):
             dValue = self.d_fa_yoy_equity
+        return dValue
 
-        return CStockSectionElem(strStockWindCode, nTradingDay, euSs, dValue)
+    def GetStockSectionElem(self, euSs, nStockId, nTradingDay):
+        dValue = self.GetStockSectionValue
+        if (dValue == None):
+            return None
+        return CStockSectionElem(nStockId, nTradingDay, euSs, dValue)
+
+    def Print(self):
+        for nTd in self.__dictStockSectionsByTd.keys():
+            for nStockId in self.__dictStockSectionsByTd[nTd].keys():
+                print(nTd, nStockId \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].dPe \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].dPb \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].dPcf \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].dPs \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_val_mv \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_dq_mv \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_freefloat_mv \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_freeshared_today \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_qfa_yoynetprofit \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_qfa_yoysales \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_fa_yoy_equity \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_fa_yoyroe \
+                    , self.__dictStockSectionsByTd[nTd][nStockId].d_fa_yoyocf)
+
+
