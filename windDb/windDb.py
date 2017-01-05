@@ -5,9 +5,11 @@
 
 import sys;sys.path.append("../")
 import datetime
+
+import business.stockSection as stockSection
+import business.stockCn as stockCn
 import database.sqlServer as sqlServer
 import utils.dateTime as dateTime
-import business.stockSection as stockSection
 
 
 class CWindDb(object):
@@ -39,8 +41,14 @@ class CWindDb(object):
         if (len(listStocks) == 0 or strTableCol == ''):
             return ''
         strRtn = ''
-        for strStock in listStocks:
-            strRtn += strTablePrefix + strTableCol + " = '" + strStock + "' OR "
+        for nStockId in listStocks:
+            strStockWindCode = nStockId
+            if (isinstance(nStockId, int) == True):
+                strStockWindCode = stockCn.Int2StockWindCode(nStockId)
+                if (strStockWindCode == None):
+                    print('stockCn.Int2StockWindCode return None: ', nStockId)
+                    continue
+            strRtn += strTablePrefix + strTableCol + " = '" + strStockWindCode + "' OR "
         if (len(strRtn) > 4):
             strRtn = strRtn[0:-4]
         return strRtn
@@ -95,15 +103,20 @@ class CWindDb(object):
             if (len(row) != 4):
                 continue
             strStockWindCode = row[0]
-            nInDate = dateTime.ToIso(row[1])
+            nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+            if (nStockId == None):
+                print('stockCn.StockWindCode2Int return None: ', strStockWindCode)
+                continue
+
+            nInDate = int(dateTime.ToIso(row[1]))
             nOutDate = -1
             nIsIn = int(row[3])
             if (nIsIn == 0):
-                nOutDate = dateTime.ToIso(row[2])
+                nOutDate = int(dateTime.ToIso(row[2]))
             else:
                 dtToday = datetime.date.today()
                 nOutDate = int(dateTime.ToIso(dtToday))
-            listRow = [strStockWindCode, nInDate, nOutDate, nIsIn]
+            listRow = [nStockId, nInDate, nOutDate, nIsIn]
             listStockPool.append(listRow)
         return listStockPool
 

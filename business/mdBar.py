@@ -47,7 +47,7 @@ class CMdBarData(object):
 
 
 class CMdBarDataManager(object):
-    __dictMdBarData = {}    # euMdBi -> nStockId -> tradingDay -> CMdbarData
+    __dictMdBarData = {}    # euMdBi -> nStockId -> tradingDay/tradingDayTime -> CMdbarData
 
     def __init__(self):
         pass
@@ -65,14 +65,14 @@ class CMdBarDataManager(object):
         if (nStockId not in self.__dictMdBarData[euMdBi]):
             self.__dictMdBarData[euMdBi][nStockId] = {}
         dtDateTime = mdBarData.GetDateTime()
-        # if (dtDateTime not in self.__dictMdBarData[nStockId][nStockId]):
-        #     self.__dictMdBarData[nStockId][nStockId][dtDateTime] = None
         self.__dictMdBarData[euMdBi][nStockId][dtDateTime] = mdBarData
+        return True
+
+    def Print(self):
         for key1 in self.__dictMdBarData.keys():
             for key2 in self.__dictMdBarData[key1].keys():
                 for key3 in self.__dictMdBarData[key1][key2].keys():
-                    print(self.__dictMdBarData[key1][key2][key3].GetInterval, self.__dictMdBarData[key1][key2][key3].GetPrice())
-        return True
+                    print(key1, key2, key3, self.__dictMdBarData[key1][key2][key3].GetInterval(), self.__dictMdBarData[key1][key2][key3].GetPrice())
         pass
 
 # print(time.strftime("%Y-%m-%d", time.localtime(time.time())))

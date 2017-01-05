@@ -12,6 +12,7 @@ import business.stockPool as stockPool
 import business.industry as industry
 import business.mdBar as mdBar
 import business.stockSection as stockSection
+import utils.dateTime as dateTime
 import windDb
 
 # DBReqTradingCalendar {
@@ -112,8 +113,13 @@ def DBReqStockEODPrice(strHost, strUser, strPwd, strDb, listStocks, strDateFrom 
     for row in listStockEODPrice:
         if (len(row) != 9):
             continue
-        mdbarData = mdBar.CMdBarData(mdBar.EU_MdBarInterval.mdbi_1d, float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]), float(row[8]), int(row[1]))
+        # print(row)
+        dtTd = dateTime.ToDate(row[1])
+        if (dtTd == None):
+            print('DBReqStockEODPrice.tradingDay error: ', row)
+        mdbarData = mdBar.CMdBarData(mdBar.EU_MdBarInterval.mdbi_1d, float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]), float(row[8]), dtTd)
         mdbarMgr.Add(row[0], mdbarData)
+    # mdbarMgr.Print()
     return True
 # } end of DBReqStockEODPrice
 
@@ -124,7 +130,7 @@ def DBReqStockSections(strHost, strUser, strPwd, strDb, euSst, listStocks, strDa
 
     ssMgr = stockSection.CStockSectionRecordsManager()
     for row in listStockSection:
-        print(row)
+        # print(row)
         if (euSst == stockSection.EU_StockSectionType.euSst_Evaluation or euSst == stockSection.EU_StockSectionType.euSst_MarketValue):
             if (len(row) == 9):
                 dPe = None
@@ -167,6 +173,7 @@ def DBReqStockSections(strHost, strUser, strPwd, strDb, euSst, listStocks, strDa
                 if (row[6] != None):
                     d_fa_yoyocf = float(row[6])
                 ssMgr.AddValue2(row[0], int(row[1]), d_qfa_yoynetprofit, d_qfa_yoysales, d_fa_yoy_equity, d_fa_yoyroe, d_fa_yoyocf)
+    ssMgr.Print()
     return True
 # } end of DBReqStockSections
 
