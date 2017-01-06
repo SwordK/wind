@@ -58,7 +58,8 @@ class CPositionSet_Index(object):
     def Add(self, pos):
         if (isinstance(pos, CPosition_Index) == False):
             return None
-        nInstId = pos.nStockId
+        nInstId = stockCn.StockWindCode2Int(pos.nStockId)
+        pos.nStockId = nInstId
         self.dictPositions[nInstId] = pos
 
     def SetPosTradingDay(self, dtTradingDay):
