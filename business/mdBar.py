@@ -73,14 +73,14 @@ class CMdBarDataManager(object):
     def GetPrice(self, euMdbi, strStockWindCode, strTradingDay):
         dtDateTime = dateTime.ToDateTime(strTradingDay)
         nStockId = stockCn.StockWindCode2Int(strStockWindCode)
-        if (self.__IsIn(euMdbi, strStockWindCode, strTradingDay) == False):
+        if (self.__IsIn(euMdbi, nStockId, dtDateTime) == False):
             return None
         return self.__dictMdBarData[euMdbi][nStockId][dtDateTime].GetPrice()
 
     def GetVolume(self, euMdbi, strStockWindCode, strTradingDay):
         dtDateTime = dateTime.ToDateTime(strTradingDay)
         nStockId = stockCn.StockWindCode2Int(strStockWindCode)
-        if (self.__IsIn(euMdbi, strStockWindCode, strTradingDay) == False):
+        if (self.__IsIn(euMdbi, nStockId, dtDateTime) == False):
             return None
         return self.__dictMdBarData[euMdbi][nStockId][dtDateTime].GetVolume()
 
