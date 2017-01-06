@@ -67,6 +67,8 @@ class CMdBarDataManager(object):
             self.__dictMdBarData[euMdBi][nStockId] = {}
 
         dtDateTime = dateTime.ToDateTime(mdBarData.GetDateTime())
+        if (dtDateTime == None):
+            return False
         self.__dictMdBarData[euMdBi][nStockId][dtDateTime] = mdBarData
         return True
 
