@@ -19,7 +19,7 @@ class CTradingCalendar(object):
 
     # Set && Get
     def Add(self, strExchange, setTc):
-        self.__dictTc[strExchange] = setTc
+        self.__dictTc[strExchange] = sorted(setTc)
 
     def GetAll(self):
         return self.__dictTc
@@ -33,11 +33,12 @@ class CTradingCalendar(object):
     def IsTradingDay(self, strExchange, tradingDay):
         if (strExchange in self.__dictTc == False):
             return False
-
-        strTd = dateTime.ToIso(tradingDay)
-        if (strTd == None):
-            return False
-        nTradingDay = int(strTd)
+        nTradingDay = tradingDay
+        if (isinstance(tradingDay, str)):
+            strTd = dateTime.ToIso(tradingDay)
+            if (strTd == None):
+                return False
+            nTradingDay = int(strTd)
         return nTradingDay in self.__dictTc[strExchange]
 
 
