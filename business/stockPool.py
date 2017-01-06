@@ -53,10 +53,18 @@ def GetStockPoolWindCode(euspt):
 
 
 class CStockPoolElem(object):
+    # @param:  nStockId: int
+    #          nInDate: int
+    #          nOutDate: int
+    #          nIsIn: int
     def __init__(self, nStockId, nInDate, nOutDate, nIsIn):
-        self.__nStockId = nStockId
-        self.__nInDate = nInDate
-        self.__nOutDate = nOutDate
+        self.__nStockId = stockCn.StockWindCode2Int(nStockId)
+        strInDate = dateTime.ToIso(nInDate)
+        strOutDate = dateTime.ToIso(nOutDate)
+        if (strInDate == None or strOutDate == None):
+            return None
+        self.__nInDate = int(strInDate)
+        self.__nOutDate = int(strOutDate)
         self.__nIsIn = nIsIn
 
     def GetStockId(self):
@@ -70,8 +78,8 @@ class CStockPoolElem(object):
 class CStockPool(object):
     def __init__(self, euSpt):
         self.__euSpt = euSpt
-        self.__dictSpElems = {}         # nStockId -> list<CStockPoolElem>
-        self.__dictSpElemsByTd = {}     # tradingDay -> list<nStockId>
+        self.__dictSpElems = {}         # nStockId<int>   -> list<CStockPoolElem>
+        self.__dictSpElemsByTd = {}     # tradingDay<int> -> list<nStockId>
 
     def GetType(self):
         return self.__euSpt
@@ -110,7 +118,7 @@ class CStockPool(object):
         return True
 
     def GenerateTdIndex(self):
-        print('CStockPoolManager.GenerateTdIndex() ...')
+        print('CStockPoolManager.GenerateTdIndex ...')
         nLoopIndex = 0
         nShowPercent = 0
         for nStockId, listElems in self.__dictSpElems.items():
