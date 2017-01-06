@@ -4,7 +4,16 @@
 # desc: 行业
 
 import sys;sys.path.append("../")
+from enum import Enum
+import business.stockCn as stockCn
 import utils.dateTime as dateTime
+
+# Enum 行业中性
+class EU_IndustrialNeutralType(Enum):
+    euInt_None = -1
+    euInt_Common = 1
+    euInt_OlsResidualError = 2          # 最小二乘法残差
+
 
 class CIndustryBaseInfo(object):
     @staticmethod
@@ -78,9 +87,20 @@ class CStockIndustryPeriodManager(object):
     def AddPeriod(self, strStockWindCode, strICode, nFromDate, nToDate):
         if (strICode not in self.__dictSipL1.keys()):
             self.__dictSipL1[strICode] = {}
-        if (strStockWindCode not in self.__dictSipL1[strICode].keys()):
-            self.__dictSipL1[strICode][strStockWindCode] = CStockIndustryPeriod(strStockWindCode, strICode)
-        return self.__dictSipL1[strICode][strStockWindCode].Add(nFromDate, nToDate)
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        if (nStockId == None):
+            return False
+
+        if (nStockId not in self.__dictSipL1[strICode].keys()):
+            self.__dictSipL1[strICode][nStockId] = CStockIndustryPeriod(nStockId, strICode)
+        bRtnAdd = self.__dictSipL1[strICode][nStockId].Add(nFromDate, nToDate)
+        if (bRtnAdd == False):
+            return False
+        else:
+            if (nStockId not in self.__dictSipL1BySid.keys()):
+                self.__dictSipL1BySid[nStockId] = {}
+            self.__dictSipL1BySid[nStockId][strICode] = self.__dictSipL1[strICode][nStockId]
+            return True
 
     def GenerateTdIndex(self, dtFrom, dtTo):
         strFrom = dateTime.ToIso(dtFrom)
@@ -90,10 +110,10 @@ class CStockIndustryPeriodManager(object):
         inputPeriod = dateTime.CDatePeriod(strFrom, strTo)
 
         for strICode in self.__dictSipL1.keys():
-            for strStockWindCode in self.__dictSipL1[strICode]:
-                self.__dictSipL1BySid[strStockWindCode] = {}
-                self.__dictSipL1BySid[strStockWindCode][strICode] = self.__dictSipL1[strICode][strStockWindCode]
-                for period in self.__dictSipL1[strICode][strStockWindCode].GetPeriods():
+            for nStockId in self.__dictSipL1[strICode]:
+                # self.__dictSipL1BySid[nStockId] = {}
+                # self.__dictSipL1BySid[nStockId][strICode] = self.__dictSipL1[strICode][nStockId]
+                for period in self.__dictSipL1[strICode][nStockId].GetPeriods():
                     dpIntersection = inputPeriod.Intersection(period)
                     if (dpIntersection == None):
                         continue
@@ -102,13 +122,13 @@ class CStockIndustryPeriodManager(object):
                     #         self.__dictSipL1ByTd1[dtDay] = {}
                     #     if strICode not in self.__dictSipL1ByTd1[dtDay]:
                     #         self.__dictSipL1ByTd1[dtDay][strICode] = []
-                    #     self.__dictSipL1ByTd1[dtDay][strICode].append(strStockWindCode)
+                    #     self.__dictSipL1ByTd1[dtDay][strICode].append(nStockId)
 #
                     #     if dtDay not in self.__dictSipL1ByTd2:
                     #         self.__dictSipL1ByTd2[dtDay] = {}
                     #     if strICode not in self.__dictSipL1ByTd2[dtDay]:
-                    #         self.__dictSipL1ByTd2[dtDay][strStockWindCode] = []
-                    #     self.__dictSipL1ByTd2[dtDay][strStockWindCode].append(strICode)
+                    #         self.__dictSipL1ByTd2[dtDay][nStockId] = []
+                    #     self.__dictSipL1ByTd2[dtDay][nStockId].append(strICode)
 
     def Print__dictSipL1(self):
         for strICode in self.__dictSipL1.keys():
