@@ -48,7 +48,7 @@ class CMdBarData(object):
 
 
 class CMdBarDataManager(object):
-    __dictMdBarData = {}    # euMdBi -> nStockId -> tradingDay/tradingDayTime -> CMdbarData
+    __dictMdBarData = {}    # euMdBi -> nStockId -> tradingDay<datetime> -> CMdbarData
 
     def __init__(self):
         pass
@@ -65,7 +65,8 @@ class CMdBarDataManager(object):
             self.__dictMdBarData[euMdBi] = {}
         if (nStockId not in self.__dictMdBarData[euMdBi]):
             self.__dictMdBarData[euMdBi][nStockId] = {}
-        dtDateTime = mdBarData.GetDateTime()
+
+        dtDateTime = dateTime.ToDateTime(mdBarData.GetDateTime())
         self.__dictMdBarData[euMdBi][nStockId][dtDateTime] = mdBarData
         return True
 
