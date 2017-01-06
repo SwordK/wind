@@ -160,8 +160,10 @@ def Tomorrow(inputDate):
 
 class CDatePeriod(object):
     def __init__(self, dtFrom, dtTo):
-        self.__nFrom = 0
-        self.__nTo = 0
+        self.__nFrom = 0        # int
+        self.__nTo = 0          # int
+        self.__listDate = []    # list<int>
+
         strFrom = ToIso(dtFrom)
         strTo = ToIso(dtTo)
         if (strFrom == '' or strFrom == None or strTo == '' or strTo == None):
@@ -172,13 +174,7 @@ class CDatePeriod(object):
             self.__nFrom = int(strTo)
             self.__nTo = int(strFrom)
         if (self.IsValid() == False):
-            return False
-        self.__listDate = []
-        nLoopDate = self.__nFrom
-        while (nLoopDate  <= self.__nTo):
-            self.__listDate.append(nLoopDate)
-            strLoopDate = Tomorrow(nLoopDate)
-            nLoopDate = int(strLoopDate)
+            return
 
     def IsValid(self):
         return (self.__nFrom != 0 and self.__nTo != 0)
@@ -190,6 +186,7 @@ class CDatePeriod(object):
 
     # 获取日期区间内的所有日期
     def DateList(self):
+        self.__GenDateList()
         return self.__listDate
 
     def IsInPeriod(self, inputDate):
@@ -203,6 +200,8 @@ class CDatePeriod(object):
             return False
 
     # 求交集
+    # @param:  dpRhs: CDataPeriod
+    # @return: CDatePeriod
     def Intersection(self, dpRhs):
         if (isinstance(dpRhs, CDatePeriod) == False):
             return None
@@ -214,48 +213,11 @@ class CDatePeriod(object):
             return None
         return CDatePeriod(nFromNew, nToNew)
 
-'''
-# Test CDatePeriod.Intersection()
-dp1 = CDatePeriod(20160101, 20161231)
-dp = CDatePeriod(20150101, 20151231)
-dpR = dp1.Intersection(dp)
-if (dpR == None):
-    print(dpR)
-else:
-    print(dpR.From(), dpR.To())
 
-dp = CDatePeriod(20170101, 20171231)
-dpR = dp1.Intersection(dp)
-if (dpR == None):
-    print(dpR)
-else:
-    print(dpR.From(), dpR.To())
-
-dp = CDatePeriod(20150101, 20171231)
-dpR = dp1.Intersection(dp)
-if (dpR == None):
-    print(dpR)
-else:
-    print(dpR.From(), dpR.To())
-
-dp = CDatePeriod(20160401, 20161201)
-dpR = dp1.Intersection(dp)
-if (dpR == None):
-    print(dpR)
-else:
-    print(dpR.From(), dpR.To())
-
-dp = CDatePeriod(20150101, 20161201)
-dpR = dp1.Intersection(dp)
-if (dpR == None):
-    print(dpR)
-else:
-    print(dpR.From(), dpR.To())
-
-dp = CDatePeriod(20160301, 20171231)
-dpR = dp1.Intersection(dp)
-if (dpR == None):
-    print(dpR)
-else:
-    print(dpR.From(), dpR.To())
-'''
+    def __GenDateList(self):
+        nLoopDate = self.__nFrom
+        if (self.IsValid()):
+            while (nLoopDate  <= self.__nTo):
+                self.__listDate.append(nLoopDate)
+                strLoopDate = Tomorrow(nLoopDate)
+                nLoopDate = int(strLoopDate)
