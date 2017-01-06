@@ -95,8 +95,13 @@ def SsFromString(strSs):
 
 class CStockSectionElem(object):
     def __init__(self, nStockId, nTradingDay, euSs, dSectionValue):
-        self.__nStockId = nStockId
+        self.__nStockId = stockCn.StockWindCode2Int(nStockId)
         self.__nTradingDay = nTradingDay
+        if (isinstance(nTradingDay, int) == False):
+            strTradingDay = dateTime.ToIso(nTradingDay)
+            if (strTradingDay == None):
+                return None
+            self.__nTradingDay = int(strTradingDay)
         self.__euSs = euSs
         self.__dValue = dSectionValue
 
@@ -156,47 +161,61 @@ class CStockSectionRecordsManager(object):
         nStockId = stockCn.StockWindCode2Int(strStockWindCode)
         if (nStockId == None):
             return False
-        if (nTradingDay not in self.__dictStockSectionsByTd.keys()):
-            self.__dictStockSectionsByTd[nTradingDay] = {}
-        if (nStockId not in self.__dictStockSectionsByTd[nTradingDay].keys()):
-            self.__dictStockSectionsByTd[nTradingDay][nStockId] = CStockSectionRecord()
+        nTradingDayFix = nTradingDay
+        if (isinstance(nTradingDay, int) == False):
+            strTradingDay = dateTime.ToIso(nTradingDay)
+            if (strTradingDay == None):
+                return False
+            nTradingDayFix = int(strTradingDay)
 
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].dPe = dPe
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].dPb = dPb
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].dPcf = dPcf
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].dPs = dPs
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_val_mv = d_val_mv
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_dq_mv = d_dq_mv
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_freeshared_today = d_freeshared_today
-        # print(strStockWindCode, nTradingDay, self.__dictStockSectionsByTd[nTradingDay][nStockId].dPe \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPb \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPcf \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].dPs \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_val_mv \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_dq_mv \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_freeshared_today)
+        if (nTradingDayFix not in self.__dictStockSectionsByTd.keys()):
+            self.__dictStockSectionsByTd[nTradingDayFix] = {}
+        if (nStockId not in self.__dictStockSectionsByTd[nTradingDayFix].keys()):
+            self.__dictStockSectionsByTd[nTradingDayFix][nStockId] = CStockSectionRecord()
+
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPe = dPe
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPb = dPb
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPcf = dPcf
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPs = dPs
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_val_mv = d_val_mv
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_dq_mv = d_dq_mv
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_freeshared_today = d_freeshared_today
+        # print(strStockWindCode, nTradingDayFix, self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPe \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPb \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPcf \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].dPs \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_val_mv \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_dq_mv \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_freeshared_today)
         return True
 
     def AddValue2(self, strStockWindCode, nTradingDay, d_qfa_yoynetprofit, d_qfa_yoysales, d_fa_yoy_equity, d_fa_yoyroe, d_fa_yoyocf):
         nStockId = stockCn.StockWindCode2Int(strStockWindCode)
         if (nStockId == None):
             return False
-        if (nTradingDay not in self.__dictStockSectionsByTd.keys()):
-            self.__dictStockSectionsByTd[nTradingDay] = {}
-        if (nStockId not in self.__dictStockSectionsByTd[nTradingDay].keys()):
-            self.__dictStockSectionsByTd[nTradingDay][nStockId] = CStockSectionRecord()
+        nTradingDayFix = nTradingDay
+        if (isinstance(nTradingDay, int) == False):
+            strTradingDay = dateTime.ToIso(nTradingDay)
+            if (strTradingDay == None):
+                return False
+            nTradingDayFix = int(strTradingDay)
 
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoynetprofit = d_qfa_yoynetprofit
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoysales = d_qfa_yoysales
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoy_equity = d_fa_yoy_equity
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyroe = d_fa_yoyroe
-        self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyocf = d_fa_yoyocf
-        # self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_roe_deducted = d_qfa_roe_deducted
-        # print(strStockWindCode, nTradingDay, self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoynetprofit \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_qfa_yoysales \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoy_equity \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyroe \
-        #     , self.__dictStockSectionsByTd[nTradingDay][nStockId].d_fa_yoyocf)
+        if (nTradingDayFix not in self.__dictStockSectionsByTd.keys()):
+            self.__dictStockSectionsByTd[nTradingDayFix] = {}
+        if (nStockId not in self.__dictStockSectionsByTd[nTradingDayFix].keys()):
+            self.__dictStockSectionsByTd[nTradingDayFix][nStockId] = CStockSectionRecord()
+
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_qfa_yoynetprofit = d_qfa_yoynetprofit
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_qfa_yoysales = d_qfa_yoysales
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_fa_yoy_equity = d_fa_yoy_equity
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_fa_yoyroe = d_fa_yoyroe
+        self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_fa_yoyocf = d_fa_yoyocf
+        # self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_qfa_roe_deducted = d_qfa_roe_deducted
+        # print(strStockWindCode, nTradingDayFix, self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_qfa_yoynetprofit \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_qfa_yoysales \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_fa_yoy_equity \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_fa_yoyroe \
+        #     , self.__dictStockSectionsByTd[nTradingDayFix][nStockId].d_fa_yoyocf)
         return True
 
 
@@ -204,13 +223,16 @@ class CStockSectionRecordsManager(object):
         if (isinstance(euSs, EU_StockSection) == False):
             print('GetStockSectionValue: euSs is not instance of EU_StockSection: ', euSs)
             return None
-        nStockId = strStockWindCode
-        if (isinstance(strStockWindCode, str) == True):
-            nStockId = stockCn.StockWindCode2Int(strStockWindCode)
+        nStockId = stockCn.StockWindCode2Int(strStockWindCode)
         if (nStockId == None):
             print('GetStockSectionValue: strStockWindCode Error: ', nStockId)
             return None
-        nTradingDay = int(dateTime.ToIso(dtTradingDay))
+        nTradingDay = dtTradingDay
+        if (isinstance(dtTradingDay, int) == False):
+            strTradingDay = dateTime.ToIso(dtTradingDay)
+            if (strTradingDay == None):
+                return None
+            nTradingDay = int(strTradingDay)
         if (nTradingDay == None):
             print('GetStockSectionValue: dtTradingDay Error: ', dtTradingDay)
         if (nTradingDay not in self.__dictStockSectionsByTd.keys()):
