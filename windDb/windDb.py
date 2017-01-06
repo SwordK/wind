@@ -26,7 +26,7 @@ class CWindDb(object):
 
         strDateFromFix = dateTime.ToIso(strDateFrom)
         strDateToFix = dateTime.ToIso(strDateTo)
-        print(strDateFrom, strDateTo, strDateFromFix, strDateToFix)
+
         if (strDateFromFix > strDateToFix):
             strDateFromFix = dateTime.ToIso(strDateTo)
             strDateToFix = dateTime.ToIso(strDateFrom)
@@ -84,7 +84,7 @@ class CWindDb(object):
         setTradingCalendar = set()
         for td in listResult:
             setTradingCalendar.add(int(td[0]))
-        return sorted(setTradingCalendar)
+        return setTradingCalendar
 
 
     def DBReqStockPool(self, strWindCode):
@@ -164,9 +164,9 @@ class CWindDb(object):
         if (strDateFrom != '' and strDateTo != ''):
             strDateLimit = self.__GetDateLimit(strDateFrom, strDateTo, 'TRADE_DT')
         strWhereLimit = ''
-        print(strDateLimit)
-        print(strStockLimit)
-        if (strStockLimit != '' or strDateLimie != ''):
+        # print(strDateLimit)
+        # print(strStockLimit)
+        if (strStockLimit != '' or strDateLimit != ''):
             strWhereLimit = ' WHERE '
             bNeedAnd = False
             if (strStockLimit != ''):
@@ -203,7 +203,7 @@ class CWindDb(object):
         strSelect += " WHERE (" + strDateLimit + ") AND (" + strStockLimit + ")"
 
         sqlS = sqlServer.CSqlServer(self.__strHost, self.__strUser, self.__strPwd, self.__strDB)
-        print(strSelect)
+        # print(strSelect)
         listResult = sqlS.ExecQuery(strSelect)
         return listResult
 
