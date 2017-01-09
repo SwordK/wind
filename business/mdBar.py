@@ -108,7 +108,7 @@ class CMdBarDataManager(object):
             print('nStockId is not in: ', nStockId, self.__dictMdBarData[euMdbi].keys())
             return False
         if (dtDateTime not in self.__dictMdBarData[euMdbi][nStockId].keys()):
-            print('dtDateTime is not in: ', dtDateTime, self.__dictMdBarData[euMdbi][nStockId].keys())
+            print('dtDateTime is not in: ', dtDateTime, strStockWindCode, self.__dictMdBarData[euMdbi][nStockId].keys())
             return False
         return True
 
