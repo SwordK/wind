@@ -43,17 +43,38 @@ class CTradingCalendar(object):
 
     def GetNextTradingDay(self, strExchange, tradingDay):
         if (self.IsTradingDay(strExchange, tradingDay) == False):
-            return None
+            return False, 0
         nTradingDay = tradingDay
         if (isinstance(tradingDay, str)):
             strTd = dateTime.ToIso(tradingDay)
             if (strTd == None):
-                return None
+                return False, 0
             nTradingDay = int(strTd)
         tdIndex = self.__dictTc[strExchange].index(nTradingDay) + 1
         if (tdIndex >= len(self.__dictTc[strExchange])):
-            return None
-        return self.__dictTc[strExchange][tdIndex]
+            return False, 0
+        return True, self.__dictTc[strExchange][tdIndex]
+
+    def GetTradingDayCount(self, strExchange, tdFrom, tdTo):
+        if (self.IsTradingDay(strExchange, tdFrom) == False or self.IsTradingDay(strExchange, tdTo) == False):
+            return False, 0
+
+        nFrom = tdFrom
+        nTo = tdTo
+        if (isinstance(nFrom, str)):
+            strTd = dateTime.ToIso(nFrom)
+            if (strTd == False, -1):
+                return False, -1
+            nFrom = int(strTd)
+        if (isinstance(nTo, str)):
+            strTd = dateTime.ToIso(nTo)
+            if (strTd == False, -1):
+                return False, -1
+            nTo = int(strTd)
+
+        tdIndexFrom = self.__dictTc[strExchange].index(nFrom)
+        tdIndexTo = self.__dictTc[strExchange].index(nTo)
+        return True, tdIndexTo - tdIndexFrom
 
 
     # [04.01.YYYY   ~ 05.01.YYYY)   -> 12.31.YYYY-1

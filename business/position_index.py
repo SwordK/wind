@@ -4,6 +4,7 @@
 # desc: 指数成分
 
 import sys;sys.path.append("../")
+import csv
 import business.mdBar as mdBar
 import business.stockCn as stockCn
 
@@ -28,6 +29,10 @@ class CPosition_Index(object):
             print(self.dtTradingDay, self.nStockId, self.nSsId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
         else:
             print(strPreFix, self.dtTradingDay, self.nStockId, self.nSsId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
+
+    def ToStrList(self):
+        return str(self.nSsId), str(self.nStockId) , str(self.dtTradingDay), str(self.dPosition), str(self.dWeight * 100), str(self.dGrade1), str(self.dGrade2), str(self.dGrade3), str(self.dGrade4)
+
 
     def CalcPosition(self):
         if (self.dLastPrice == 0.0 or self.dMarketValue == 0.0):
@@ -98,6 +103,22 @@ class CPositionSet_Index(object):
         print(len(self.dictPositions), self.dTotalMarketValue)
         for key in self.dictPositions.keys():
             self.dictPositions[key].Print(strPreFix)
+
+    def Dump(self):
+        if (len(self.dictPositions) <= 0):
+            return False
+        strCsvFileName = 'stockssectiondailyconstituent.csv'
+        listCsvRows = []
+        for key in self.dictPositions.keys():
+            listCsvRows.append(self.dictPositions[key].ToStrList())
+        if (len(listCsvRows) <= 0):
+            return False
+
+        with open(strCsvFileName, 'a', newline = '') as csvfile:
+            f_csv = csv.writer(csvfile)
+            f_csv.writerows(listCsvRows)
+        csvfile.close()
+        return True
 
 # pos1 = CPosition_Index()
 # pos1.dMarketValue = 1000.0
