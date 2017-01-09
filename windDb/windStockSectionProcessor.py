@@ -65,10 +65,7 @@ def AdjustPortfolios(dictGroupFunds, nGroupSize, dictInsts, dtTradingDay):
 
     listGroupFundsKeys = sorted(dictGroupFunds.keys())
     nGroupBaseId = listGroupFundsKeys[0]
-    dFundTotal = 0.0
-    for key in listGroupFundsKeys:
-        dFundTotal += dictGroupFunds[key]
-
+    
     setSections = set()
     for key in dictInsts.keys():
         setSections.add(dictInsts[key])
@@ -183,25 +180,66 @@ def AdjustPosition(stockPoolInst, dictGroupFunds, dtTradingDay, euSs, nGroupSize
     return dictPositions
 
 
+def InitPosition(nGroupSize, stockPoolInst, nTradingDay, euSs, euInt = industry.EU_IndustrialNeutralType.euInt_None):
+    dBaseIndex = 1000.0
+    dIndexMultiple = 1000000.0;
+    dGroupFunds = dBaseIndex * dIndexMultiple
+    nGroupBaseId = 0
+    dictGroupFunds = {}
+    for nGroupId in range(nGroupBaseId, nGroupBaseId + nGroupSize):
+        dictGroupFunds[nGroupId] = dGroupFunds
+
+    # stockPoolInst, dictGroupFunds, dtTradingDay, euSs, nGroupSize, dFundTotal, euInt
+
+    return AdjustPosition(stockPoolInst, dictGroupFunds, nTradingDay, euSs, nGroupSize, euInt)
+
 def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
     nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, euSs, strIndustrialNeutral):
+
+    # 日期区间设置
+    rtnBeginDate = dateTime.ToIso(strBeginDate)
+    rtnEndDate = dateTime.ToIso(strEndDate)
+    if (rtnBeginDate == None or rtnEndDate == None):
+        print('input beginDate or endDate error: ', strBeginDate, strEndDate)
+        sys.exit(3)
+    nInputBeginDate = int(min(rtnBeginDate, rtnEndDate))
+    nInputEndDate = int(max(rtnBeginDate, rtnEndDate))
+    dictDefualt1stTradingDay = { \
+        stockPool.EU_StockPoolType.euspt_SZ50 : 20040102 \
+        , stockPool.EU_StockPoolType.euspt_HS300 : 20050408 \
+        , stockPool.EU_StockPoolType.euspt_ZZ500 : 20070115 \
+        , stockPool.EU_StockPoolType.euspt_ZZ800 : 20070115 \
+        }
+
+    if (nInputBeginDate < dictDefualt1stTradingDay[euSpt]):
+        nInputBeginDate = dictDefualt1stTradingDay[euSpt]
+
 
     print('DBReqTradingCalendar ...')
     windDbBusiness.DBReqTradingCalendar(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
     tcInst = tc.CTradingCalendar()
 
+    # 获取第一个交易日
+    tcInst = tCal.CTradingCalendar()
+    while nInputBeginDate < nInputEndDate:
+        if (tcInst.IsTradingDay('SSE', nInputBeginDate) == True):
+            break
+        nInputBeginDate = int(dateTime.Tomorrow(nInputBeginDate))
+
     print('DBReqIndustries_ZX ...')
     windDbBusiness.DBReqIndustries_ZX(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
 
     print('DBReqStockPool ...')
-    if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt)):
+    if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate)):
         print('DBReqStockPool Failed ...')
         sys.exit(3)
 
     spManager = stockPool.CStockPoolManager()
     spInst = spManager.GetStockPool(euSpt)
-    setStocks = spInst.GetStocksByDatePeriod(strBeginDate, strEndDate)
-    print(setStocks)
+    setStocks = spInst.GetStocksByDatePeriod(rtnBeginDate, rtnEndDate)
+    if (len(setStocks) <= 0):
+        print('StockPool is Empty: ', euSpt, rtnBeginDate, rtnEndDate)
+        sys.exti(3)
 
     print('DBReqStockEODPrice ...')
     windDbBusiness.DBReqStockEODPrice(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, setStocks, strBeginDate, strEndDate)
@@ -210,11 +248,8 @@ def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
     euSst = stockSection.Ss2Sst(euSs)
     windDbBusiness.DBReqStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSst, setStocks, strBeginDate, strEndDate)
 
-    dFundTotal = 1000.0
-    dictFunds = {}
-    dictFunds[1] = 1023.7
-    dictFunds[2] = 1042.3
-    print(AdjustPosition(spInst, dictFunds, strBeginDate, euSs, nGroupSize, dFundTotal))
+    InitPosition(nGroupSize, spInst, nInputBeginDate, euSs)
+
     pass
 
 
