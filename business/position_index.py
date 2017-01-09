@@ -5,6 +5,7 @@
 
 import sys;sys.path.append("../")
 import business.mdBar as mdBar
+import business.stockCn as stockCn
 
 class CPosition_Index(object):
     def __init__(self):

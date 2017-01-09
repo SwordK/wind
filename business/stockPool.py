@@ -8,6 +8,7 @@ import sys;sys.path.append("../")
 from enum import Enum
 import datetime
 
+import business.stockCn as stockCn
 import utils.dateTime as dateTime
 
 # Enum
