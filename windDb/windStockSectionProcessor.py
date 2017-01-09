@@ -65,7 +65,7 @@ def AdjustPortfolios(dictGroupFunds, nGroupSize, dictInsts, dtTradingDay):
 
     listGroupFundsKeys = sorted(dictGroupFunds.keys())
     nGroupBaseId = listGroupFundsKeys[0]
-    
+
     setSections = set()
     for key in dictInsts.keys():
         setSections.add(dictInsts[key])
@@ -127,7 +127,7 @@ def AdjustPortfolios(dictGroupFunds, nGroupSize, dictInsts, dtTradingDay):
     return dictPositions
 
 
-def AdjustPosition(stockPoolInst, dictGroupFunds, dtTradingDay, euSs, nGroupSize, dFundTotal, euInt = industry.EU_IndustrialNeutralType.euInt_None):
+def AdjustPosition(stockPoolInst, dictGroupFunds, dtTradingDay, euSs, nGroupSize, euInt = industry.EU_IndustrialNeutralType.euInt_None):
     if (nGroupSize <= 0):
         print('nGroupSize <= 0: ', nGroupSize)
         return None
@@ -175,7 +175,7 @@ def AdjustPosition(stockPoolInst, dictGroupFunds, dtTradingDay, euSs, nGroupSize
     for key in dictPositions.keys():
         dictPositions[key].FlushMd()
         dictPositions[key].CalcPosPosition()
-        dictPositions[key].Print()
+        dictPositions[key].Print(str(key))
 
     return dictPositions
 
@@ -248,7 +248,43 @@ def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
     euSst = stockSection.Ss2Sst(euSs)
     windDbBusiness.DBReqStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSst, setStocks, strBeginDate, strEndDate)
 
-    InitPosition(nGroupSize, spInst, nInputBeginDate, euSs)
+    nDateIndex = 0
+    dictPositions = InitPosition(nGroupSize, spInst, nInputBeginDate, euSs)
+    if (dictPositions == None or len(dictPositions) == 0):
+        return None
+
+    nDateIndex += 1
+
+    if (euSst == stockSection.EU_StockSectionType.euSst_Evaluation or euSst == stockSection.EU_StockSectionType.euSst_MarketValue):
+        nDateLoop = nInputBeginDate
+        while True:
+            nDateLoop = tcInst.GetNextTradingDay('SSE', nDateLoop)
+            print(nDateLoop, nInputEndDate, nDateIndex)
+            if (nDateLoop > nInputEndDate):
+                break
+
+            # 刷新当日价格和市值
+            for key in dictPositions.keys():
+                dictPositions[key].SetPosTradingDay(nDateLoop)
+                dictPositions[key].FlushMd()
+                dictPositions[key].CalcTotalMarketValue()
+                dictPositions[key].CalcPosWeight()
+                dictPositions[key].Print(str(key))
+                pass
+
+            # 是否调仓
+            if (nDateIndex % nDateInterval == 0):
+                # print('nDateIndex % nDateInterval == 0', nDateIndex, nDateInterval)
+                dictGroupFunds = {}
+                for key in dictPositions:
+                    dictGroupFunds[key] = dictPositions[key].GetTotalMarketValue()
+                dictPositions = AdjustPosition(spInst, dictGroupFunds, nDateLoop, euSs, nGroupSize)
+                pass
+            nDateIndex += 1
+    elif (euSst == stockSection.EU_StockSectionType.euSst_Growing or euSst == stockSection.EU_StockSectionType.euSst_Quality):
+        pass
+    else:
+        return None
 
     pass
 
