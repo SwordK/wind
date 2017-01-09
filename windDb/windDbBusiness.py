@@ -53,10 +53,14 @@ def DBReqTradingCalendar(strHost, strUser, strPwd, strDb):
 
 
 # DbReqStockPool {
-def DBReqStockPool(strHost, strUser, strPwd, strDb, euSpt):
+def DBReqStockPool(strHost, strUser, strPwd, strDb, euSpt, nInputBeginDate = 0, nInputEndDate = 0):
+    if (isinstance(nInputBeginDate, int) == False or isinstance(nInputEndDate, int) == False):
+        print('nInputBeginDate and nInputEndDate must be [int]')
+        return False
     strWindCode = stockPool.GetStockPoolWindCode(euSpt)
     if (strWindCode == 'None'):
         return False
+
     dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
     listStockPool = dbInst.DBReqStockPool(strWindCode)
 
@@ -64,6 +68,12 @@ def DBReqStockPool(strHost, strUser, strPwd, strDb, euSpt):
     spInst = stockPool.CStockPool(euSpt)
     for rowElem in listStockPool:
         if (len(rowElem) != 4):
+            continue
+        nInDate = rowElem[1]
+        nOutDate = rowElem[2]
+        if (nInputEndDate != 0 and nInDate > nInputEndDate):
+            continue
+        if (nInputBeginDate != 0 and nOutDate < nInputBeginDate):
             continue
         elem = stockPool.CStockPoolElem(rowElem[0], int(rowElem[1]), int(rowElem[2]), int(rowElem[3]))
         spInst.AddElem(elem)
@@ -109,6 +119,8 @@ def DBReqStockIndustries_ZX(strHost, strUser, strPwd, strDb, strDateFrom = '', s
 def DBReqStockEODPrice(strHost, strUser, strPwd, strDb, listStocks, strDateFrom = '', strDateTo = ''):
     dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
     listStockEODPrice = dbInst.DBReqStockEODPrice(listStocks, strDateFrom, strDateTo)
+    # print('DBReqStockEODPrice() return [', len(listStockEODPrice), '] records')
+
     mdbarMgr = mdBar.CMdBarDataManager()
     for row in listStockEODPrice:
         if (len(row) != 9):
@@ -127,6 +139,7 @@ def DBReqStockEODPrice(strHost, strUser, strPwd, strDb, listStocks, strDateFrom 
 def DBReqStockSections(strHost, strUser, strPwd, strDb, euSst, listStocks, strDateFrom = '', strDateTo = ''):
     dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
     listStockSection = dbInst.DBReqStockSections(euSst, listStocks, strDateFrom, strDateTo)
+    # print('DBReqStockSections() return [', len(listStockSection), '] records')
 
     ssMgr = stockSection.CStockSectionRecordsManager()
     for row in listStockSection:
