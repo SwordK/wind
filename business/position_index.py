@@ -23,8 +23,11 @@ class CPosition_Index(object):
         self.dGrade3 = 0.0
         self.dGrade4 = 0.0
 
-    def Print(self):
-        print(self.dtTradingDay, self.nStockId, self.nSsId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
+    def Print(self, strPreFix = ''):
+        if (strPreFix == ''):
+            print(self.dtTradingDay, self.nStockId, self.nSsId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
+        else:
+            print(strPreFix, self.dtTradingDay, self.nStockId, self.nSsId, self.dPosition, self.dWeight, self.dMarketValue, self.dLastPrice, self.timeLastPrice  , self.dGrade1, self.dGrade2, self.dGrade3, self.dGrade4)
 
     def CalcPosition(self):
         if (self.dLastPrice == 0.0 or self.dMarketValue == 0.0):
@@ -55,6 +58,9 @@ class CPositionSet_Index(object):
         self.dictPositions = {}         # instrumentId -> CPosition_Index
         self.dTotalMarketValue = 0.0
         pass
+
+    def GetTotalMarketValue(self):
+        return self.dTotalMarketValue
 
     def Add(self, pos):
         if (isinstance(pos, CPosition_Index) == False):
@@ -88,10 +94,10 @@ class CPositionSet_Index(object):
         for key in self.dictPositions.keys():
             self.dictPositions[key].FlushMd()
 
-    def Print(self):
+    def Print(self, strPreFix = ''):
         print(len(self.dictPositions), self.dTotalMarketValue)
         for key in self.dictPositions.keys():
-            self.dictPositions[key].Print()
+            self.dictPositions[key].Print(strPreFix)
 
 # pos1 = CPosition_Index()
 # pos1.dMarketValue = 1000.0
