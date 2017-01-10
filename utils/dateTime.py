@@ -118,16 +118,37 @@ def ToIsoExt(inputDate):
     return strRtn
 
 
+def DayeDeltaByDays(inputDate, nDeltaDays):
+    dateInput = ToDateTime(inputDate)
+    if (dateInput == None):
+        return None
+    dateDelta = dateInput + datetime.timedelta(days=nDeltaDays)
+    return ToIso(dateDelta)
+
 # @param: inputDate: [int/iso/isoext]
 # @return: iso date
-def Tomorrow(inputDate):
-    dateLoopDate = ToDateTime(inputDate)
-    if (dateLoopDate == None):
+def Tomorrow(inputDate):    
+    return DayeDeltaByDays(inputDate, 1)
+
+def Yestoday(inputDate):
+    return DayeDeltaByDays(inputDate, -1)
+
+# 明年的今天
+def TodayInNextYear(inputDate):
+    dateInputDate = ToDateTime(inputDate)
+    if (dateInputDate == None):
         return None
-    dateTomorrow = dateLoopDate + datetime.timedelta(days=1)
-    return ToIso(dateTomorrow)
+    if (dateInputDate.month == 2 and dateInputDate.day == 29):
+        return ToIso(datetime.datetime(dateInputDate.year+1, 3, 1))
+    else:
+        return ToIso(datetime.datetime(dateInputDate.year+1, dateInputDate.month, dateInputDate.day))
 
-
+def DateDelta(inputDate1, inputDate2):
+    dtDate1 = ToDateTime(inputDate1)
+    dtDate2 = ToDateTime(inputDate2)
+    if (dtDate1 == None or dtDate2 == None):
+        return None
+    return (dtDate2 - dtDate1).days
 
 # print(isValidDate_IsoExt('2016-12-31'))
 # print(isValidDate_IsoExt('2016-2-2'))
