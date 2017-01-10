@@ -42,18 +42,37 @@ class CTradingCalendar(object):
         return nTradingDay in self.__dictTc[strExchange]
 
     def GetNextTradingDay(self, strExchange, tradingDay):
-        if (self.IsTradingDay(strExchange, tradingDay) == False):
-            return False, 0
         nTradingDay = tradingDay
         if (isinstance(tradingDay, str)):
             strTd = dateTime.ToIso(tradingDay)
             if (strTd == None):
                 return False, 0
             nTradingDay = int(strTd)
-        tdIndex = self.__dictTc[strExchange].index(nTradingDay) + 1
-        if (tdIndex >= len(self.__dictTc[strExchange])):
+
+        if (self.IsTradingDay(strExchange, tradingDay) == True):
+            tdIndex = self.__dictTc[strExchange].index(nTradingDay) + 1
+            if (tdIndex >= len(self.__dictTc[strExchange])):
+                return False, 0
+            return True, self.__dictTc[strExchange][tdIndex]
+        else:
+            if (strExchange in self.__dictTc == False):
+                return False, 0
+            if (len(self.__dictTc[strExchange]) <= 0):
+                return False, 0
+            n1st = self.__dictTc[strExchange][0]
+            nLast = self.__dictTc[strExchange][len(self.__dictTc[strExchange])-1]
+            # 比第一天还早，则返回第一天
+            if (nTradingDay < n1st):
+                return True, n1st
+            # 比最后一天还晚，则返回错误
+            elif (nTradingDay > nLast):
+                return False, 0
+
+            for nDay in self.__dictTc[strExchange]:
+                if nTradingDay < nDay:
+                    return True, nDay
             return False, 0
-        return True, self.__dictTc[strExchange][tdIndex]
+
 
     def GetTradingDayCount(self, strExchange, tdFrom, tdTo):
         if (self.IsTradingDay(strExchange, tdFrom) == False or self.IsTradingDay(strExchange, tdTo) == False):
