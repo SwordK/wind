@@ -5,6 +5,7 @@
 
 import sys;sys.path.append("../")
 import time
+import datetime
 from enum import Enum
 
 import business.stockCn as stockCn
@@ -51,6 +52,29 @@ class CMdBarDataManager(object):
     __dictMdBarData = {}    # euMdBi -> nStockId -> tradingDay<datetime> -> CMdbarData
 
     def __init__(self):
+        pass
+
+    def Clear(self):
+        self.__dictMdBarData.clear()
+
+    # 删除dtBefore 之前的记录
+    def RemoveBefore(self, inputBefore):
+        dtBefore = inputBefore
+        print(1)
+        if (isinstance(inputBefore, datetime.datetime) == False):
+            print(2)
+            dtBefore = dateTime.ToDateTime(inputBefore)
+            if (dtBefore == None):
+                print(3, dtBefore, inputBefore)
+                return False
+        print(4)
+        for keyMdbi in list(self.__dictMdBarData.keys()):
+            for keyStockId in list(self.__dictMdBarData[keyMdbi].keys()):
+                for keyTd in list(self.__dictMdBarData[keyMdbi][keyStockId].keys()):
+                    if (keyTd < dtBefore):
+                        del self.__dictMdBarData[keyMdbi][keyStockId][keyTd]
+        print(5)
+        # self.Print()
         pass
 
     def Add(self, strStockWindCode, mdBarData):
@@ -105,12 +129,13 @@ class CMdBarDataManager(object):
             print('euMdbi is not in: ', euMdi, self.__dictMdBarData.keys())
             return False
         if (nStockId not in self.__dictMdBarData[euMdbi].keys()):
-            print('nStockId is not in: ', nStockId, self.__dictMdBarData[euMdbi].keys())
+            # print('nStockId is not in: ', nStockId, self.__dictMdBarData[euMdbi].keys())
             return False
         if (dtDateTime not in self.__dictMdBarData[euMdbi][nStockId].keys()):
-            print('dtDateTime is not in: ', dtDateTime, strStockWindCode, self.__dictMdBarData[euMdbi][nStockId].keys())
+            # print('dtDateTime is not in: ', dtDateTime, strStockWindCode, self.__dictMdBarData[euMdbi][nStockId].keys())
             return False
         return True
+
 
 # print(time.strftime("%Y-%m-%d", time.localtime(time.time())))
 # print(time.time())

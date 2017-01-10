@@ -157,6 +157,46 @@ class CStockSectionRecordsManager(object):
     def __init__(self):
         pass
 
+    def Clear(self):
+        self.__dictStockSectionsByTd.clear()
+
+    # 删除dtBefore 之前的记录
+    def RemoveBefore(self, dtBefore):
+        nBefore = dtBefore
+        print(1)
+        if (isinstance(dtBefore, int) == False):
+            print(2)
+            strBefore = dateTime.ToIso(dtBefore)
+            if (strBefore == None):
+                print(3, strBefore, dtBefore)
+                return False
+            print(4)
+            nBefore = int(strBefore)
+
+        for key in list(self.__dictStockSectionsByTd.keys()):
+            if (key <= nBefore):
+                del self.__dictStockSectionsByTd[key]
+        print(5)
+        # self.Print()
+
+    def Remove(self, dtFrom, dtTo):
+        nFrom = dtFrom
+        if (isinstance(dtFrom, int) == False):
+            strFrom = dateTime.ToIso(dtFrom)
+            if (strFrom == None):
+                return False
+            nFrom = int(strFrom)
+        nTo = dtTo
+        if (isinstance(nTo, int) == False):
+            strTo = dateTime.ToIso(nTo)
+            if (strTo == None):
+                return False
+            nTo = int(strTo)
+        for key in self.__dictStockSectionsByTd.keys():
+            if (key >= nFrom and key <= nTo):
+                del self.__dictStockSectionsByTd[key]
+        pass
+
     def AddValue1(self, strStockWindCode, nTradingDay, dPe, dPb, dPcf, dPs, d_val_mv, d_dq_mv, d_freeshared_today):
         nStockId = stockCn.StockWindCode2Int(strStockWindCode)
         if (nStockId == None):
