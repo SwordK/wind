@@ -5,7 +5,8 @@
 
 import sys;sys.path.append("../")
 import datetime
-
+import pymssql
+import pandas as pd
 import business.stockSection as stockSection
 import business.stockCn as stockCn
 import database.sqlServer as sqlServer
@@ -19,6 +20,25 @@ class CWindDb(object):
         self.__strPwd = pwd
         self.__strDB = db
 
+    def __GenSelectLimit(self, listStocks, strDateFrom = '', strDateTo = '', strStockCol = 'S_INFO_WINDCODE', strTradingDayCol = 'TRADE_DT', strTablePrefix = ''):
+        strStockLimit = ''
+        if (len(listStocks) > 0):
+            strStockLimit = self.__GetStockLimit(listStocks, strStockCol)
+        strDateLimit = ''
+        if (strDateFrom != '' and strDateTo != ''):
+            strDateLimit = self.__GetDateLimit(strDateFrom, strDateTo, strTradingDayCol)
+        strWhereLimit = ''
+        if (strStockLimit != '' or strDateLimit != ''):
+            strWhereLimit = ' WHERE '
+            bNeedAnd = False
+            if (strStockLimit != ''):
+                strWhereLimit += '(' + strStockLimit + ')'
+                bNeedAnd = True
+            if (strDateLimit != ''):
+                if (bNeedAnd == True):
+                    strWhereLimit += 'AND'
+                strWhereLimit += '(' + strDateLimit + ')'
+        return strWhereLimit
 
     def __GetDateLimit(self, strDateFrom, strDateTo, strTableCol, strTablePrefix = ''):
         if (strDateFrom == '' or strDateTo == '' or strTableCol == ''):
@@ -182,6 +202,20 @@ class CWindDb(object):
         return listResult
 
 
+    def DBReqStockEODPrice_Pandas(self, listStocks, strDateFrom = '', strDateTo = ''):
+        strSelect = "SELECT S_INFO_WINDCODE as INSTRUMENT_ID,TRADE_DT as TRADING_DAY,S_DQ_ADJOPEN,S_DQ_ADJHIGH,S_DQ_ADJLOW,S_DQ_ADJCLOSE,S_DQ_ADJPRECLOSE,S_DQ_VOLUME,S_DQ_AMOUNT FROM [WindDB].[dbo].[ASHAREEODPRICES]"
+        strLimit = self.__GenSelectLimit(listStocks, strDateFrom, strDateTo)
+        if (strLimit != None):
+            strSelect +=  strLimit
+
+        conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
+        df = pd.read_sql_query(strSelect, conn, parse_dates = ['TRADING_DAY'])
+        conn.close()
+        indexedDf = df.set_index(['TRADING_DAY', 'INSTRUMENT_ID'])
+        rtnDf = indexedDf.sortlevel(0)
+        return rtnDf
+
+
     def DBReqStockSections(self, euSst, listStocks, strDateFrom, strDateTo):
         if (len(listStocks) <= 0):
             return False
@@ -216,3 +250,8 @@ class CWindDb(object):
 # for elem in listResult:
 #     print(elem)
 # wDb.GetDateLimit('20150101', '20151231', 'TRADE_DT', 't1.')
+
+# wDb = CWindDb('10.63.6.100', 'ForOTC', 'otc12345678', 'WindDB')
+# listStocks = ['600000.SH', '000002.SZ']
+# dfResult = wDb.DBReqStockEODPrice_Pandas(listStocks, '20150101', '20151231')
+# print(dfResult)
