@@ -7,6 +7,7 @@ import sys;sys.path.append("../")
 
 from enum import Enum
 import datetime
+from pandas import DataFrame
 
 import business.stockCn as stockCn
 import utils.dateTime as dateTime
@@ -36,6 +37,17 @@ def GetStockPoolByStr(strInput):
         return EU_StockPoolType.euspt_All
     else:
         return EU_StockPoolType.euspt_None
+
+def GetDefault1stTradingDay(euSpt):
+    dictDefualt1stTradingDay = { \
+        stockPool.EU_StockPoolType.euspt_SZ50 : 20040102 \
+        , stockPool.EU_StockPoolType.euspt_HS300 : 20050408 \
+        , stockPool.EU_StockPoolType.euspt_ZZ500 : 20070115 \
+        , stockPool.EU_StockPoolType.euspt_ZZ800 : 20070115 \
+        }
+    if (euSpt not in dictDefualt1stTradingDay.keys()):
+        return None
+    return dictDefualt1stTradingDay[euSpt]
 
 
 # Functions
@@ -164,3 +176,60 @@ class CStockPoolManager(object):
         euSpt = spInst.GetType()
         self.__dictStockPools[euSpt] = spInst
         return True
+
+
+#  #############################################################################
+#  Pandas method
+#  #############################################################################
+class CStockPool_Pandas(object):
+    def __init__(self, euSpt, dfData):
+        self.__euSpt = euSpt
+        self.__dfData = dfData
+
+    def GetType(self):
+        return self.__euSpt
+
+    def GetStocksByTd(self, inputDate):
+        if (isinstance(self.__dfData, DataFrame) == False or self.__dfData.empty):
+            return None
+        dtTd = dateTime.ToDateTime(inputDate)
+        if (dtTd == None):
+            return None
+
+        setRtn = set()
+        for index, row in self.__dfData.iterrows():
+            if (dtTd >= index[0] and dtTd <= index[1]):
+                setRtn.add(row['STOCK_WINDCODE'])
+        return setRtn
+
+    def GetStocksByDatePeriod(self, dtFrom, dtTo):
+        if (isinstance(self.__dfData, DataFrame) == False or self.__dfData.empty):
+            return None
+        dtFrom = dateTime.ToDateTime(dtFrom)
+        dtTo = dateTime.ToDateTime(dtTo)
+        if (dtFrom == None or dtTo == None):
+            return None
+
+        setRtn = set()
+        datePeriod = dateTime.CDatePeriod(dtFrom, dtTo)
+        for index, row in self.__dfData.iterrows():
+            if (datePeriod.IsInPeriod(index[0]) or datePeriod.IsInPeriod(index[1])):
+                setRtn.add(row['STOCK_WINDCODE'])
+        return setRtn
+
+
+class CStockPoolManager_Pandas(object):
+    __dictStockPools = {}
+
+    def SetStockPool(self, spDfInst):
+        if (isinstance(spDfInst, CStockPool_Pandas) == False):
+            return False
+        self.__dictStockPools[spDfInst.GetType()] = spDfInst
+        return True
+
+    def GetStockPool(self, euSpt):
+        if (isinstance(euSpt, EU_StockPoolType) == False):
+            return None
+        if euSpt in self.__dictStockPools.keys():
+            return self.__dictStockPools[euSpt]
+        return None

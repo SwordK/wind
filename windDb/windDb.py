@@ -235,7 +235,7 @@ class CWindDb(object):
     def DBReqTradingCalendar_Pandas(self, setExchanges, strStartDate = '', strEndDate = ''):
         """
         @return:    mergedDf
-                    None
+                    mergedDf.empty
         #-------------------------
         @return format:
         EXCHANGE_ID  CFFEX  CZCE   DCE  SHFE   SSE  SZSE
@@ -248,8 +248,9 @@ class CWindDb(object):
         1990-10-15     NaN  True   NaN   NaN   NaN   NaN
         1990-10-16     NaN  True   NaN   NaN   NaN   NaN
         """
+        mergedDf = pd.DataFrame()
         if (isinstance(setExchanges, set) == False):
-            return None
+            return mergedDf
         setFuturesExchange = set(['CFFEX', 'SHFE', 'DCE', 'CZCE'])
         setStockExchange = set(['SSE', 'SZSE'])
         strDateLimit = self.__GetDateLimit(strStartDate, strEndDate, 'TRADE_DAYS')
@@ -290,7 +291,7 @@ class CWindDb(object):
     def DBReqStockPool_Pandas(self, strWindCode):
         """
         @return:    df
-                    None
+                    df.empty
         #-------------------------
         @return format:
                                     STOCK_WINDCODE
@@ -305,11 +306,12 @@ class CWindDb(object):
         2016-12-12  2017-01-19      600291.SH
                     2017-01-19      603866.SH
         """
+        df = DataFrame()
         if (len(strWindCode) != 9):
-            return None
+            return df
 
         strSelect = "SELECT S_CON_WINDCODE as STOCK_WINDCODE, S_CON_INDATE as IN_DATE, S_CON_OUTDATE as OUT_DATE, CUR_SIGN FROM WindDB.dbo.AINDEXMEMBERS"
-        strSelect += " where S_INFO_WINDCODE = '" + strWindCode + "' order by S_CON_INDATE"
+        strSelect += " where S_INFO_WINDCODE = '" + strWindCode + "' order by CUR_SIGN desc, IN_DATE asc"
 
         conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
         df = pd.read_sql_query(strSelect, conn, parse_dates = ['IN_DATE', 'OUT_DATE'])
@@ -319,6 +321,8 @@ class CWindDb(object):
         for index, row in df.iterrows():
             if (row['CUR_SIGN'] == 1.0):
                 df['OUT_DATE'][index] = dtToday
+            else:
+                break
         del df['CUR_SIGN']
         df = df.set_index(['IN_DATE', 'OUT_DATE'])
         df = df.sortlevel([0,1])
@@ -335,7 +339,6 @@ class CWindDb(object):
     def DBReqStockIndustries_ZX_Pandas(self):
         """
         @return:    df
-                    None
         #-------------------------
         @return format:
                                     STOCK_WINDCODE CITICS_IND_CODE
@@ -369,7 +372,7 @@ class CWindDb(object):
     def DBReqStockEODPrice_Pandas(self, listStocks, strDateFrom = '', strDateTo = ''):
         """
         @return:    dfEODPrice
-                    None
+                    dfEODPrice.empty
         #-------------------------
         @return format:
                     Prices
@@ -407,16 +410,17 @@ class CWindDb(object):
         @return eg:     similar to self.DBReqStockEODPrice_Pandas()
 
         """
+        dfEOD = DataFrame()
+        dfFinancial = DataFrame()
         if (isinstance(setSst, set) == False or len(setSst) <= 0):
-            return None
+            return dfEOD, dfFinancial
         if (len(listStocks) <= 0):
-            return None
+            return dfEOD, dfFinancial
 
         strStockLimit = ""
         if (len(listStocks) > 0):
             strStockLimit = self.__GetStockLimit(listStocks, 'S_INFO_WINDCODE')
 
-        dfEOD = DataFrame()
         if (stockSection.EU_StockSectionType.euSst_Evaluation in setSst or stockSection.EU_StockSectionType.euSst_MarketValue in setSst):
             strSelect = "SELECT S_INFO_WINDCODE as STOCK_WINDCODE, TRADE_DT as TRADING_DAY, S_VAL_PE_TTM, S_VAL_PB_NEW, S_VAL_PCF_OCFTTM, S_VAL_PS_TTM , S_VAL_MV, S_DQ_MV, FREE_SHARES_TODAY FROM WindDB.dbo.ASHAREEODDERIVATIVEINDICATOR"
             strDateLimit = self.__GetDateLimit(strDateFrom, strDateTo, "TRADE_DT")
@@ -428,7 +432,6 @@ class CWindDb(object):
             indexedDf = df.set_index(['TRADING_DAY', 'STOCK_WINDCODE'])
             dfEOD = indexedDf.sortlevel(0)
 
-        dfFinancial = DataFrame()
         if (stockSection.EU_StockSectionType.euSst_Growing in setSst or stockSection.EU_StockSectionType.euSst_Quality in setSst):
             strSelect = "SELECT S_INFO_WINDCODE as STOCK_WINDCODE, REPORT_PERIOD as TRADING_DAY, S_QFA_YOYNETPROFIT, S_QFA_YOYSALES, S_FA_YOY_EQUITY, S_FA_YOYROE, S_FA_YOYOCF FROM WindDB.dbo.AShareFinancialIndicator"
             strDateLimit = self.__GetDateLimit(strDateFrom, strDateTo, "REPORT_PERIOD")
@@ -439,8 +442,6 @@ class CWindDb(object):
             conn.close()
             indexedDf = df.set_index(['TRADING_DAY', 'STOCK_WINDCODE'])
             dfFinancial = indexedDf.sortlevel(0)
-        else:
-            return None
 
         return dfEOD, dfFinancial
 
@@ -475,3 +476,4 @@ class CWindDb(object):
 # wDb = CWindDb('10.63.6.100', 'ForOTC', 'otc12345678', 'WindDB')
 # print(wDb.DBReqStockIndustries_ZX_Pandas())
 # print(wDb.DBReqStockPool_Pandas( '000906.SH'))
+#

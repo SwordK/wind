@@ -192,3 +192,28 @@ def DBReqStockSections(strHost, strUser, strPwd, strDb, euSst, listStocks, strDa
 
 #listStocks = ['603883.SH' , '603885.SH' ,'603899.SH','603993.SH']
 # DBReqStockSections('10.63.6.100','ForOTC','otc12345678','WindDB', stockSection.EU_StockSectionType.euSst_Evaluation, listStocks, '20160101', '20161231')
+
+def DBReqStockPool_Pandas(strHost, strUser, strPwd, strDb, euSpt, nInputBeginDate = 0, nInputEndDate = 0):
+    dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
+    strWindCode = stockPool.GetStockPoolWindCode(euSpt)
+    if (strWindCode == 'None' or strWindCode == False):
+        return False
+    dfSp = dbInst.DBReqStockPool_Pandas(strWindCode)
+    if (dfSp.empty):
+        return False
+
+    spInst = stockPool.CStockPool_Pandas(euSpt, dfSp)
+    spMgr = stockPool.CStockPoolManager_Pandas()
+    return spMgr.SetStockPool(spInst)
+
+
+
+# euSpt = stockPool.EU_StockPoolType.euspt_ZZ800
+# print(DBReqStockPool_Pandas('10.63.6.100','ForOTC','otc12345678','WindDB', euSpt))
+# spMgr = stockPool.CStockPoolManager_Pandas()
+# spInst = spMgr.GetStockPool(euSpt)
+# setRtn = spInst.GetStocksByTd(20170106)
+# setRtn = spInst.GetStocksByDatePeriod_2(20160111, 20170119)
+
+# setRtn = spInst.GetStocksByDatePeriod(20160111, 20170119)
+# print(len(setRtn), setRtn)
