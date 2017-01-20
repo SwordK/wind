@@ -387,7 +387,7 @@ class CWindDb(object):
                     600000.SH        125.13      126.14
         ...                    ...                  ...
         """
-        strSelect = "SELECT S_INFO_WINDCODE as STOCK_WINDCODE,TRADE_DT as TRADING_DAY,S_DQ_ADJOPEN,S_DQ_ADJHIGH,S_DQ_ADJLOW,S_DQ_ADJCLOSE,S_DQ_ADJPRECLOSE,S_DQ_VOLUME,S_DQ_AMOUNT FROM [WindDB].[dbo].[ASHAREEODPRICES]"
+        strSelect = "SELECT S_INFO_WINDCODE as STOCK_WINDCODE,TRADE_DT as TRADING_DAY,S_DQ_ADJOPEN,S_DQ_ADJHIGH,S_DQ_ADJLOW,S_DQ_ADJCLOSE,S_DQ_ADJPRECLOSE,S_DQ_VOLUME,S_DQ_AMOUNT FROM WindDB.dbo.ASHAREEODPRICES"
         strLimit = self.__GenSelectLimit(listStocks, strDateFrom, strDateTo)
         if (strLimit != None):
             strSelect +=  strLimit
@@ -400,7 +400,7 @@ class CWindDb(object):
         return dfEODPrice
 
 
-    def DBReqStockSection_Pandas(self, setSst, listStocks, strDateFrom, strDateTo):
+    def DBReqStockSections_Pandas(self, setSst, listStocks, strDateFrom, strDateTo):
         """
         @returns:   [dfEOD, dfFinancial]
                     None

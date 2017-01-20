@@ -5,6 +5,10 @@
 
 import sys;sys.path.append("../")
 import getopt
+import numpy as np
+import pandas as pd
+from pandas import DataFrame
+
 import business.stockPool as stockPool
 import business.stockSection as stockSection
 import business.position_index as indexPosition
@@ -193,16 +197,23 @@ def InitPosition(nGroupSize, stockPoolInst, nTradingDay, euSs, euInt = industry.
     return AdjustPosition(stockPoolInst, dictGroupFunds, nTradingDay, euSs, nGroupSize, euInt)
 
 
-def InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate):
+def InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, euInt, nInputBeginDate, nInputEndDate):
+    """
+    @1: DBReqTradingCalendar
+    @2: DBReqIndustries_ZX
+    @3: DBReqStockPool
+    """
     print('DBReqTradingCalendar ...')
     windDbBusiness.DBReqTradingCalendar(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
     tcInst = tCal.CTradingCalendar()
 
-    print('DBReqIndustries_ZX ...')
-    windDbBusiness.DBReqIndustries_ZX(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
+    if (euInt != industry.EU_IndustrialNeutralType.euInt_None):
+        print('DBReqIndustries_ZX ...')
+        windDbBusiness.DBReqIndustries_ZX(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
 
     print('DBReqStockPool ...')
-    if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate)):
+    # if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate)):
+    if (False == windDbBusiness.DBReqStockPool_Pandas(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt)):
         print('DBReqStockPool Failed ...')
         sys.exit(3)
 
@@ -210,7 +221,7 @@ def InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt,
 
 
 def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
-    nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, euSs, strIndustrialNeutral):
+    nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, listSs, euInt):
     # 日期区间设置
     rtnBeginDate = dateTime.ToIso(strBeginDate)
     rtnEndDate = dateTime.ToIso(strEndDate)
@@ -231,17 +242,18 @@ def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
     dDefault1stTradingDay = dictDefualt1stTradingDay[euSpt]
 
     # 初始化通用数据
-    InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate)
+    InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, euInt, nInputBeginDate, nInputEndDate)
 
     # 获取第一个交易日
     tcInst = tCal.CTradingCalendar()
     while nInputBeginDate < nInputEndDate:
-        if (tcInst.IsTradingDay('SSE', nInputBeginDate) == True):
-            break
-        nInputBeginDate = int(dateTime.Tomorrow(nInputBeginDate))
+        if (tcInst.IsTradingDay('SSE', nInputBeginDate) == False):
+            nInputBeginDate = tcInst.GetNextTradingDay(nInputBeginDate)
+        break
+
 
     # StockPoolManager 和 StockPool实例
-    spManager = stockPool.CStockPoolManager()
+    spManager = stockPool.CStockPoolManager_Pandas()
     spInst = spManager.GetStockPool(euSpt)
 
     # 每次处理2年内的数据，处理完释放内存
@@ -254,93 +266,127 @@ def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
     while nBeginDateFix <= nInputEndDate:
         nEndDateFix = int(dateTime.TodayInNextYear(nBeginDateFix))
         nEndDateFix = int(dateTime.TodayInNextYear(nEndDateFix))
+        nEndDateFix = int(dateTime.Yestoday(nEndDateFix))
         if (nEndDateFix > nInputEndDate):
             nEndDateFix = nInputEndDate
         print('From', nBeginDateFix, ' To', nEndDateFix)
 
-        setStocks = set()
+        setStocks = spInst.GetStocksByDatePeriod(nBeginDateFix, nEndDateFix)
+        """
         if (bInited == False):
             setStocks = spInst.GetStocksByDatePeriod(nBeginDateFix, nEndDateFix)
         else:
             strStockPoolBeginFix = dateTime.DayeDeltaByDays(nBeginDateFix, -1*nDateInterval*2)
             print('strStockPoolBeginFix', strStockPoolBeginFix, nBeginDateFix)
-            setStocks = spInst.GetStocksByDatePeriod(int(strStockPoolBeginFix), nEndDateFix)
+            setStocks = spInst.GetStocksByDatePeriod(int(strStockPoolBeginFix), nEndDateFix)#
+        """
 
         # print(setStocks)
         if (len(setStocks) <= 0):
             print('StockPool is Empty: ', euSpt, nBeginDateFix, nEndDateFix)
             sys.exit(3)
         print('DBReqStockEODPrice ...')
-        windDbBusiness.DBReqStockEODPrice(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, setStocks, str(nBeginDateFix), str(nEndDateFix))
+        dfEODPrice = windDbBusiness.DBReqStockEODPrice_Pandas(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, setStocks, str(nBeginDateFix), str(nEndDateFix))#
+        if (dfEODPrice.empty == True):
+            print('!!! DBReqStockEODPrice_Pandas return Empty DataFrame !!!')
+            continue
+        setSst = set()
+        for item in listSs:
+            setSst.add(stockSection.Ss2Sst(item))
 
-        print('DBReqStockSections ...')
-        euSst = stockSection.Ss2Sst(euSs)
-        windDbBusiness.DBReqStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSst, setStocks, str(nBeginDateFix), str(nEndDateFix))
+        # print('DBReqStockSections ...')
+        # euSst = stockSection.Ss2Sst(euSs)
+        # windDbBusiness.DBReqStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSst, setStocks, str(nBeginDateFix), str(nEndDateFix))#
+        dfSectionEOD, dfSectionFinancial = windDbBusiness.DBReqStockSections_Pandas(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, setSst, setStocks, str(nBeginDateFix), str(nEndDateFix))
 
-        if (bInited == False):
-            dictPositions = InitPosition(nGroupSize, spInst, nInputBeginDate, euSs)
-            nDateIndex = 1
-            bInited = True
+        dfPandSAll = pd.concat([dfEODPrice, dfSectionEOD, dfSectionFinancial], axis = 1, join = 'outer')
+        del dfEODPrice, dfSectionEOD, dfSectionFinancial
 
-        if (dictPositions == None or len(dictPositions) == 0):
-            return None
-        # nDateIndex += 1
-        if (euSst == stockSection.EU_StockSectionType.euSst_Evaluation or euSst == stockSection.EU_StockSectionType.euSst_MarketValue):
-            nDateLoop = nBeginDateFix
-            if (nBeginDateFix != nInputBeginDate):
-                strDateLoop = dateTime.Yestoday(nDateLoop)
-                if (strDateLoop == None):
-                    return None
-                nDateLoop = int(strDateLoop)
+        strColPrice = 'S_DQ_ADJCLOSE'
+        # 计算自由流通市值
+        if (stockSection.EU_StockSection.euSs_MarketValueFlowingFree in listSs and dfSectionEOD.empty == False):
+            strColMvFf = stockSection.DfColFromEuSs(stockSection.EU_StockSection.euSs_MarketValueFlowingFree)
+            strColFreeShares = 'FREE_SHARES_TODAY'
 
-            while True:
-                # 取下一交易日
-                print(nDateLoop)
-                bRtn, nDateLoop = tcInst.GetNextTradingDay('SSE', nDateLoop)
-                if (bRtn == False or nDateLoop > nEndDateFix):
-                    print('Break1', bRtn, nDateLoop)
-                    break
-                print(nDateLoop)
-                # 刷新当日价格和市值
-                for key in dictPositions.keys():
-                    dictPositions[key].SetPosTradingDay(nDateLoop)
-                    dictPositions[key].FlushMd()
-                    dictPositions[key].CalcTotalMarketValue()
-                    dictPositions[key].CalcPosWeight()
-                    dictPositions[key].Dump()
-                    pass
-                # 是否调仓
-                strAdjPos = '0'
-                if (nDateIndex % nDateInterval == 0):
-                    strAdjPos = '1'
-                    # print('nDateIndex % nDateInterval == 0', nDateIndex, nDateInterval)
-                    dictGroupFunds = {}
-                    for key in dictPositions:
-                        dictGroupFunds[key] = dictPositions[key].GetTotalMarketValue()
-                    dictPositions = AdjustPosition(spInst, dictGroupFunds, nDateLoop, euSs, nGroupSize)
-                    pass
-                nDateIndex += 1
-                bRtn, nDayCount = tcInst.GetTradingDayCount('SSE', dDefault1stTradingDay, nDateLoop)
-                if (bRtn == False):
-                    print('Break2', bRtn, nDayCount)
-                    break
-                # dump index
-                strCsvIndexValue = 'stocksectionindex.csv'
-                csvfile = open(strCsvIndexValue, 'a')
-                for key in dictPositions:
-                    outString = str(key) + ',' + str(nDateLoop) + ',' + str(dictPositions[key].dTotalMarketValue) + ',' + str(nDayCount) + ',' + strAdjPos + '\n'
-                    csvfile.write(outString)
-                csvfile.close()
-        elif (euSst == stockSection.EU_StockSectionType.euSst_Growing or euSst == stockSection.EU_StockSectionType.euSst_Quality):
+            dfPandSAll[strColMvFf] = np.nan
+            for index, row in self.dfPandSAll.iterrows():
+                dfPandSAll[strColMvFf][index] = dfPandSAll[strColPrice][index] * dfPandSAll[strColFreeShares][index]
+
+            del dfPandSAll[strColFreeShares]
+
+        for euSs in set(listSs):
+            # setStocks = spInst.GetStocksByTd()
+
+
+
+
+
             pass
-        else:
-            return None
 
-        strRemoveBefore = dateTime.DayeDeltaByDays(nEndDateFix, -1*nDateInterval)
-        ssMgr = stockSection.CStockSectionRecordsManager()
-        ssMgr.RemoveBefore(int(strRemoveBefore))
-        mdMgr = mdBar.CMdBarDataManager()
-        mdMgr.RemoveBefore(strRemoveBefore)
+    #     if (bInited == False):
+    #         dictPositions = InitPosition(nGroupSize, spInst, nInputBeginDate, euSs)
+    #         nDateIndex = 1
+    #         bInited = True#
+
+    #     if (dictPositions == None or len(dictPositions) == 0):
+    #         return None
+    #     # nDateIndex += 1
+    #     if (euSst == stockSection.EU_StockSectionType.euSst_Evaluation or euSst == stockSection.EU_StockSectionType.euSst_MarketValue):
+    #         nDateLoop = nBeginDateFix
+    #         if (nBeginDateFix != nInputBeginDate):
+    #             strDateLoop = dateTime.Yestoday(nDateLoop)
+    #             if (strDateLoop == None):
+    #                 return None
+    #             nDateLoop = int(strDateLoop)#
+
+    #         while True:
+    #             # 取下一交易日
+    #             print(nDateLoop)
+    #             bRtn, nDateLoop = tcInst.GetNextTradingDay('SSE', nDateLoop)
+    #             if (bRtn == False or nDateLoop > nEndDateFix):
+    #                 print('Break1', bRtn, nDateLoop)
+    #                 break
+    #             print(nDateLoop)
+    #             # 刷新当日价格和市值
+    #             for key in dictPositions.keys():
+    #                 dictPositions[key].SetPosTradingDay(nDateLoop)
+    #                 dictPositions[key].FlushMd()
+    #                 dictPositions[key].CalcTotalMarketValue()
+    #                 dictPositions[key].CalcPosWeight()
+    #                 dictPositions[key].Dump()
+    #                 pass
+    #             # 是否调仓
+    #             strAdjPos = '0'
+    #             if (nDateIndex % nDateInterval == 0):
+    #                 strAdjPos = '1'
+    #                 # print('nDateIndex % nDateInterval == 0', nDateIndex, nDateInterval)
+    #                 dictGroupFunds = {}
+    #                 for key in dictPositions:
+    #                     dictGroupFunds[key] = dictPositions[key].GetTotalMarketValue()
+    #                 dictPositions = AdjustPosition(spInst, dictGroupFunds, nDateLoop, euSs, nGroupSize)
+    #                 pass
+    #             nDateIndex += 1
+    #             bRtn, nDayCount = tcInst.GetTradingDayCount('SSE', dDefault1stTradingDay, nDateLoop)
+    #             if (bRtn == False):
+    #                 print('Break2', bRtn, nDayCount)
+    #                 break
+    #             # dump index
+    #             strCsvIndexValue = 'stocksectionindex.csv'
+    #             csvfile = open(strCsvIndexValue, 'a')
+    #             for key in dictPositions:
+    #                 outString = str(key) + ',' + str(nDateLoop) + ',' + str(dictPositions[key].dTotalMarketValue) + ',' + str(nDayCount) + ',' + strAdjPos + '\n'
+    #                 csvfile.write(outString)
+    #             csvfile.close()
+    #     elif (euSst == stockSection.EU_StockSectionType.euSst_Growing or euSst == stockSection.EU_StockSectionType.euSst_Quality):
+    #         pass
+    #     else:
+    #         return None#
+
+    #     strRemoveBefore = dateTime.DayeDeltaByDays(nEndDateFix, -1*nDateInterval)
+    #     ssMgr = stockSection.CStockSectionRecordsManager()
+    #     ssMgr.RemoveBefore(int(strRemoveBefore))
+    #     mdMgr = mdBar.CMdBarDataManager()
+    #     mdMgr.RemoveBefore(strRemoveBefore)#
 
         nBeginDateFix = int(dateTime.Tomorrow(nEndDateFix))
 
@@ -406,11 +452,19 @@ def ParseOpts(strAppName, argv):
         strSupportedSp = '-p ' + stockPool.GetSupportedSp()
         print(strSupportedSp)
         sys.exit(2)
-    euSs = stockSection.SsFromString(strStockSection)
-    if (strStockSection == 'More' or (euSs == stockSection.EU_StockSection.euSs_None and strStockSection != '')):
+
+    # euSs = stockSection.SsFromString(strStockSection)
+    if (strStockSection == 'More'):
         strSupportedSs = '-p ' + stockSection.GetSupportedSs()
         print(strSupportedSs)
         sys.exit(2)
+
+    listSplit = strStockSection.split('|')
+    listSs = list()
+    for strSs in listSplit:
+        euSs = stockSection.SsFromString(strSs)
+        if (euSs != stockSection.EU_StockSection.euSs_None):
+            listSs.append(euSs)
 
     if (nDateInterval <= 0):
         print('-i <--dateinterval> is needed')
@@ -428,11 +482,11 @@ def ParseOpts(strAppName, argv):
         print('-p <--stockpool> is needed')
         print(strUsage)
         sys.exit(2)
-    if (euSs == stockSection.EU_StockSection.euSs_None):
+    if (len(listSs) == 0):
         print('-s <--stocksection> is needed')
         print(strUsage)
         sys.exit(2)
-    return nDateInterval, nGroupSize, strBeginDate, strEndDate, euSpt, euSs, strIndustrialNeutral
+    return nDateInterval, nGroupSize, int(strBeginDate), int(strEndDate), euSpt, listSs, industry.GetIndustrialNeutralTypeByStr(strIndustrialNeutral)
 
 
 def main(listArgs):
@@ -450,8 +504,12 @@ def main(listArgs):
     strDbPasswd = 'otc12345678'
     strDbDatabase = 'WindDB'
 
+    print(listParams)
     ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
-        listParams[0], listParams[1], listParams[2], listParams[3], listParams[4], listParams[5], listParams[6])   
+        listParams[0], listParams[1], listParams[2], listParams[3], listParams[4], listParams[5], listParams[6])
+
+        # 初始化通用数据
+    # InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate)
 
 if __name__ == '__main__':
     main(sys.argv)

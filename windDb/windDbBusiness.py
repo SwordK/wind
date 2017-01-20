@@ -206,7 +206,13 @@ def DBReqStockPool_Pandas(strHost, strUser, strPwd, strDb, euSpt, nInputBeginDat
     spMgr = stockPool.CStockPoolManager_Pandas()
     return spMgr.SetStockPool(spInst)
 
+def DBReqStockEODPrice_Pandas(strHost, strUser, strPwd, strDb, listStocks, strDateFrom = '', strDateTo = ''):
+    dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
+    return dbInst.DBReqStockEODPrice_Pandas(listStocks, strDateFrom, strDateTo)
 
+def DBReqStockSections_Pandas(strHost, strUser, strPwd, strDb, setSst, listStocks, strDateFrom = '', strDateTo = ''):
+    dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
+    return dbInst.DBReqStockSections_Pandas(setSst, listStocks, strDateFrom, strDateTo)
 
 # euSpt = stockPool.EU_StockPoolType.euspt_ZZ800
 # print(DBReqStockPool_Pandas('10.63.6.100','ForOTC','otc12345678','WindDB', euSpt))
