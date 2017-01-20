@@ -92,6 +92,34 @@ def SsFromString(strSs):
 
 # print(SsFromString('yoyocf').value)
 
+def DfColFromEuSs(euSs):
+    if (euSs == EU_StockSection.euSs_Pe):
+        return "S_VAL_PE_TTM"
+    elif (euSs == EU_StockSection.euSs_Pb):
+        return "S_VAL_PB_NEW"
+    elif (euSs == EU_StockSection.euSs_Pcf):
+        return "S_VAL_PCF_OCFTTM"
+    elif (euSs == EU_StockSection.euSs_Ps):
+        return "S_VAL_PS_TTM"
+    elif (euSs == EU_StockSection.euSs_MarketValueTotal):
+        return " S_VAL_MV"
+    elif (euSs == EU_StockSection.euSs_MarketValueFlowing):
+        return "S_DQ_MV"
+    elif (euSs == EU_StockSection.euSs_MarketValueFlowingFree):
+        return "MVFlowingFree"
+    elif (euSs == EU_StockSection.euSs_Qfa_yoynetprofit):
+        return "S_QFA_YOYNETPROFIT"
+    elif (euSs == EU_StockSection.euSs_Qfa_yoysales):
+        return "S_QFA_YOYSALES"
+    elif (euSs == EU_StockSection.euSs_Fa_yoy_equity):
+        return "S_FA_YOY_EQUITY"
+    elif (euSs == EU_StockSection.euSs_Fa_yoyroe):
+        return "S_FA_YOYROE"
+    elif (euSs == EU_StockSection.euSs_Fa_yoyocf):
+        return "S_FA_YOYOCF"
+    else:
+        return ""
+
 
 class CStockSectionElem(object):
     def __init__(self, nStockId, nTradingDay, euSs, dSectionValue):
