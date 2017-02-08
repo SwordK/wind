@@ -102,7 +102,7 @@ def DfColFromEuSs(euSs):
     elif (euSs == EU_StockSection.euSs_Ps):
         return "S_VAL_PS_TTM"
     elif (euSs == EU_StockSection.euSs_MarketValueTotal):
-        return " S_VAL_MV"
+        return "S_VAL_MV"
     elif (euSs == EU_StockSection.euSs_MarketValueFlowing):
         return "S_DQ_MV"
     elif (euSs == EU_StockSection.euSs_MarketValueFlowingFree):

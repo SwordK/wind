@@ -14,6 +14,13 @@ class EU_IndustrialNeutralType(Enum):
     euInt_Common = 1
     euInt_OlsResidualError = 2          # 最小二乘法残差
 
+def GetIndustrialNeutralTypeByStr(strInput):
+    if (strInput == 'common'):
+        return EU_IndustrialNeutralType.euInt_Common
+    elif (strInput == 'ols'):
+        return EU_IndustrialNeutralType.euInt_OlsResidualError
+    else:
+        return EU_IndustrialNeutralType.euInt_None
 
 class CIndustryBaseInfo(object):
     @staticmethod

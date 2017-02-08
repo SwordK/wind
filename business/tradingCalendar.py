@@ -42,13 +42,13 @@ class CTradingCalendar(object):
         return nTradingDay in self.__dictTc[strExchange]
 
     def GetNextTradingDay(self, strExchange, tradingDay):
-        nTradingDay = tradingDay
-        if (isinstance(tradingDay, str)):
+        nTradingDay = tradingDay           
+        if (isinstance(tradingDay, str) or isinstance(tradingDay, datetime.datetime)):
             strTd = dateTime.ToIso(tradingDay)
             if (strTd == None):
                 return False, 0
             nTradingDay = int(strTd)
-
+        
         if (self.IsTradingDay(strExchange, tradingDay) == True):
             tdIndex = self.__dictTc[strExchange].index(nTradingDay) + 1
             if (tdIndex >= len(self.__dictTc[strExchange])):

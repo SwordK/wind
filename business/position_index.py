@@ -63,6 +63,11 @@ class CPositionSet_Index(object):
         self.dictPositions = {}         # instrumentId -> CPosition_Index
         self.dTotalMarketValue = 0.0
         pass
+    def Clone(self, rhs):
+        self.dTotalMarketValue = rhs.dTotalMarketValue
+        for stockId in rhs.dictPositions.keys():
+            pos = rhs.dictPositions[stockId]
+            self.dictPositions[stockId] = pos
 
     def GetTotalMarketValue(self):
         return self.dTotalMarketValue
@@ -81,9 +86,10 @@ class CPositionSet_Index(object):
     def CalcTotalMarketValue(self):
         dTotalMarketValue = 0.0
         for key in self.dictPositions.keys():
-            dMarketValue = self.dictPositions[key].CalcMarketValue()
-            if (dMarketValue != 0.0):
-                dTotalMarketValue += dMarketValue
+            # dMarketValue = self.dictPositions[key].CalcMarketValue()
+            # if (dMarketValue != 0.0):
+            #     dTotalMarketValue += dMarketValue
+            dTotalMarketValue += self.dictPositions[key].dMarketValue
         self.dTotalMarketValue = dTotalMarketValue
         return dTotalMarketValue
 
