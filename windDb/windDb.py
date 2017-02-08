@@ -336,38 +336,57 @@ class CWindDb(object):
     #     listResult = sqlS.ExecQuery(strSelect)
     #     return listResult
 
+    # def DBReqStockIndustries_ZX_Pandas(self):
+    #     """
+    #     @return:    df
+    #     #-------------------------
+    #     @return format:
+    #                                 STOCK_WINDCODE CITICS_IND_CODE
+    #     IN_DATE     OUT_DATE(if CUR_SING==True: OUT_DATE==Today)
+    #     #-------------------------
+    #     @return eg:
+    #                                 STOCK_WINDCODE CITICS_IND_CODE
+    #     IN_DATE     OUT_DATE
+    #     2003-01-01  2004-04-30      000809.SZ      b10h040100
+    #                 2004-04-30      000712.SZ      b10n010100
+    #     ...               ...             ...
+    #     2016-07-01  2017-01-19      601966.SH      b106040500
+    #                 2017-01-19      300521.SZ      b10a020300
+    #     2016-07-07  2017-01-19      002805.SZ      b106030800
+    #     """
+    #     strSelect = "SELECT S_INFO_WINDCODE as STOCK_WINDCODE, CITICS_IND_CODE, ENTRY_DT as IN_DATE, REMOVE_DT as OUT_DATE, CUR_SIGN FROM WindDB.dbo.ASHAREINDUSTRIESCLASSCITICS order by ENTRY_DT;"
+    #     conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
+    #     df = pd.read_sql_query(strSelect, conn, parse_dates = ['IN_DATE', 'OUT_DATE'])
+    #     conn.close()
+
+    #     dtToday = datetime.date.today()
+    #     for index, row in df.iterrows():
+    #         if (row['CUR_SIGN'] == '1'):
+    #             df['OUT_DATE'][index] = dtToday
+    #     del df['CUR_SIGN']
+    #     df = df.set_index(['IN_DATE', 'OUT_DATE'])
+    #     df = df.sortlevel([0,1])
+    #     return df
     def DBReqStockIndustries_ZX_Pandas(self):
         """
         @return:    df
         #-------------------------
         @return format:
-                                    STOCK_WINDCODE CITICS_IND_CODE
-        IN_DATE     OUT_DATE(if CUR_SING==True: OUT_DATE==Today)
-        #-------------------------
-        @return eg:
-                                    STOCK_WINDCODE CITICS_IND_CODE
-        IN_DATE     OUT_DATE
-        2003-01-01  2004-04-30      000809.SZ      b10h040100
-                    2004-04-30      000712.SZ      b10n010100
-        ...               ...             ...
-        2016-07-01  2017-01-19      601966.SH      b106040500
-                    2017-01-19      300521.SZ      b10a020300
-        2016-07-07  2017-01-19      002805.SZ      b106030800
+                       CITICS_IND_CODE    IN_DATE   OUT_DATE CUR_SIGN
+        STOCK_WINDCODE                                               
+        000001.SZ           b10l020100 2003-01-01        NaT        1
+        000002.SZ           b10n010100 2003-01-01        NaT        1
+        000004.SZ           b10i010200 2004-11-01        NaT        1
+        000004.SZ           b10r010200 2003-01-01 2004-10-31        0
         """
         strSelect = "SELECT S_INFO_WINDCODE as STOCK_WINDCODE, CITICS_IND_CODE, ENTRY_DT as IN_DATE, REMOVE_DT as OUT_DATE, CUR_SIGN FROM WindDB.dbo.ASHAREINDUSTRIESCLASSCITICS order by ENTRY_DT;"
         conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
         df = pd.read_sql_query(strSelect, conn, parse_dates = ['IN_DATE', 'OUT_DATE'])
         conn.close()
-
-        dtToday = datetime.date.today()
-        for index, row in df.iterrows():
-            if (row['CUR_SIGN'] == '1'):
-                df['OUT_DATE'][index] = dtToday
-        del df['CUR_SIGN']
-        df = df.set_index(['IN_DATE', 'OUT_DATE'])
-        df = df.sortlevel([0,1])
+        df = df.set_index(['STOCK_WINDCODE'])
+        df = df.sortlevel([0])
         return df
-
+        
 
     def DBReqStockEODPrice_Pandas(self, listStocks, strDateFrom = '', strDateTo = ''):
         """

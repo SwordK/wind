@@ -161,3 +161,37 @@ class CStockIndustryPeriodManager(object):
                 print(td, strStockWindCode, self.__dictSipL1ByTd2[td][strStockWindCode])
 
 
+
+
+class CStockIndustryPeriodr_Pandas(object):    
+    __dfData = {}
+    __colIn = 'IN_DATE'
+    __colOut = 'OUT_DATE'
+    __colCurSign = 'CUR_SIGN'
+    __colIndCode = 'CITICS_IND_CODE'
+
+    def SetData(self, dfData):
+        self.__dfData[0] = dfData
+
+    def GetStockIndustry(self, inputTradingDay, strStock):
+        dtTradingDay = dateTime.ToDateTime(inputTradingDay)
+        strSi = '-'
+        if strStock in self.__dfData[0].index:        
+            dfStock = self.__dfData[0].ix[strStock]
+            nIdxLen = len(dfStock.index)
+
+            nIndex = 0
+            while nIndex < nIdxLen:
+                dfLoop = dfStock.ix[nIndex]
+                nIndex += 1
+                dtIn = dateTime.ToDateTime(dfLoop[self.__colIn])
+                if (dtTradingDay < dtIn):
+                    continue
+                else:
+                    if dfLoop[self.__colCurSign] == '1' or dtTradingDay <= dateTime.ToDateTime(dfLoop[self.__colOut]):
+                        strSi = dfLoop[self.__colIndCode]
+                        break
+        return strSi
+    
+    def Print(self):
+        print(self.__dfData)

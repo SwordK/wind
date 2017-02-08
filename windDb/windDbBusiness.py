@@ -206,6 +206,17 @@ def DBReqStockPool_Pandas(strHost, strUser, strPwd, strDb, euSpt, nInputBeginDat
     spMgr = stockPool.CStockPoolManager_Pandas()
     return spMgr.SetStockPool(spInst)
 
+def DBReqStockIndustries_ZX_Pandas(strHost, strUser, strPwd, strDb):
+    dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
+    dfStockInd = dbInst.DBReqStockIndustries_ZX_Pandas()
+    if (dfStockInd.empty):
+        return False
+
+    stockIndInst = industry.CStockIndustryPeriodr_Pandas()
+    stockIndInst.SetData(dfStockInd)
+    return True
+    pass
+
 def DBReqStockEODPrice_Pandas(strHost, strUser, strPwd, strDb, listStocks, strDateFrom = '', strDateTo = ''):
     dbInst = windDb.CWindDb(strHost, strUser, strPwd, strDb)
     return dbInst.DBReqStockEODPrice_Pandas(listStocks, strDateFrom, strDateTo)
@@ -223,3 +234,13 @@ def DBReqStockSections_Pandas(strHost, strUser, strPwd, strDb, setSst, listStock
 
 # setRtn = spInst.GetStocksByDatePeriod(20160111, 20170119)
 # print(len(setRtn), setRtn)
+
+# DBReqStockIndustries_ZX_Pandas('10.63.6.100','ForOTC','otc12345678','WindDB')
+# stockIndInst2 = industry.CStockIndustryPeriodr_Pandas()
+# stockIndInst2.Print()
+# print(stockIndInst2.GetStockIndustry(20120101, '603988.SH'))
+# print(stockIndInst2.GetStockIndustry(20141201, '603988.SH'))
+# print(stockIndInst2.GetStockIndustry(20150430, '603988.SH'))
+# print(stockIndInst2.GetStockIndustry(20150501, '603988.SH'))
+# print(stockIndInst2.GetStockIndustry(20150504, '603988.SH'))
+# print(stockIndInst2.GetStockIndustry(20150506, '603988.SH'))
