@@ -44,9 +44,12 @@ def StockSectionDesc2BaseId(nGroupSize, nDateInterval, euSs, euSpt, euInt):
     listDesc.extend(listTail)
     
     return JwPyMath.ListMergeToInt(listDesc)
+#print(StockSectionDesc2BaseId(4, 20, stockSection.EU_StockSection.euSs_MarketValueTotal, stockPool.EU_StockPoolType.euspt_ZZ800, industry.EU_IndustrialNeutralType.euInt_None))
+
 
 def StockSectionBaseId2Desc(nBaseId):
     """
+    @ return: nGroupSize, nDateInterval, euSs, euSpt, euInt
     """
     euInt = industry.EU_IndustrialNeutralType.euInt_None
     euSs = stockSection.EU_StockSection.euSs_None
@@ -70,6 +73,6 @@ def StockSectionBaseId2Desc(nBaseId):
 
     return nGroupSize, nDateInterval, euSs, euSpt, euInt
     pass
-
-print(StockSectionBaseId2Desc(11802041))
-print(StockSectionDesc2BaseId(4, 20, stockSection.EU_StockSection.euSs_MarketValueTotal, stockPool.EU_StockPoolType.euspt_ZZ800, industry.EU_IndustrialNeutralType.euInt_None))
+# print(StockSectionBaseId2Desc(11802041))
+# print(StockSectionBaseId2Desc(1802041))
+# print(StockSectionBaseId2Desc(211802041))
