@@ -205,16 +205,21 @@ class CStockPool_Pandas(object):
     def GetStocksByDatePeriod(self, dtFrom, dtTo):
         if (isinstance(self.__dfData, DataFrame) == False or self.__dfData.empty):
             return None
-        dtFrom = dateTime.ToDateTime(dtFrom)
-        dtTo = dateTime.ToDateTime(dtTo)
-        if (dtFrom == None or dtTo == None):
+        dtFromFix = dateTime.ToDateTime(dtFrom)
+        dtToFix = dateTime.ToDateTime(dtTo)
+        if (dtFromFix == None or dtToFix == None):
             return None
 
         setRtn = set()
-        datePeriod = dateTime.CDatePeriod(dtFrom, dtTo)
+        # datePeriod = dateTime.CDatePeriod(dtFromFix, dtToFix)
         for index, row in self.__dfData.iterrows():
-            if (datePeriod.IsInPeriod(index[0]) or datePeriod.IsInPeriod(index[1])):
-                setRtn.add(row['STOCK_WINDCODE'])
+            dtSpBegin = index[0]
+            dtSpEnd = index[1]
+
+            if (dtSpEnd < dtFromFix or dtSpBegin > dtToFix):
+                continue
+            
+            setRtn.add(row['STOCK_WINDCODE'])
         return setRtn
 
 
