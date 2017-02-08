@@ -10,7 +10,7 @@ import utils.dateTime as dateTime
 
 # Enum 行业中性
 class EU_IndustrialNeutralType(Enum):
-    euInt_None = -1
+    euInt_None = 0
     euInt_Common = 1
     euInt_OlsResidualError = 2          # 最小二乘法残差
 
