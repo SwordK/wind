@@ -5,6 +5,7 @@
 
 import sys;sys.path.append("../")
 from enum import Enum
+import pandas as pd
 import business.stockCn as stockCn
 import utils.dateTime as dateTime
 
@@ -163,7 +164,7 @@ class CStockIndustryPeriodManager(object):
 
 
 
-class CStockIndustryPeriodr_Pandas(object):    
+class CStockIndustryPeriod_Pandas(object):    
     __dfData = {}
     __colIn = 'IN_DATE'
     __colOut = 'OUT_DATE'
@@ -178,19 +179,26 @@ class CStockIndustryPeriodr_Pandas(object):
         strSi = '-'
         if strStock in self.__dfData[0].index:        
             dfStock = self.__dfData[0].ix[strStock]
-            nIdxLen = len(dfStock.index)
 
-            nIndex = 0
-            while nIndex < nIdxLen:
-                dfLoop = dfStock.ix[nIndex]
-                nIndex += 1
+            if isinstance(dfStock, pd.Series):
+                dfLoop = dfStock
                 dtIn = dateTime.ToDateTime(dfLoop[self.__colIn])
-                if (dtTradingDay < dtIn):
-                    continue
-                else:
+                if dtTradingDay >= dtIn:
                     if dfLoop[self.__colCurSign] == '1' or dtTradingDay <= dateTime.ToDateTime(dfLoop[self.__colOut]):
                         strSi = dfLoop[self.__colIndCode]
-                        break
+            else:
+                nIdxLen = len(dfStock.index)
+                nIndex = 0
+                while nIndex < nIdxLen:
+                    dfLoop = dfStock.ix[nIndex]
+                    nIndex += 1
+                    dtIn = dateTime.ToDateTime(dfLoop[self.__colIn])
+                    if dtTradingDay < dtIn:
+                        continue
+                    else:
+                        if dfLoop[self.__colCurSign] == '1' or dtTradingDay <= dateTime.ToDateTime(dfLoop[self.__colOut]):
+                            strSi = dfLoop[self.__colIndCode]
+                            break
         return strSi
     
     def Print(self):

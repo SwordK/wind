@@ -79,7 +79,7 @@ def SortingGroup_Pandas(dfDailyData_St, nGroupSize, nGroupBaseId, bMore2Less = T
 
     if (nGroupSize > nSectionSize):
         for nIndex in range(0,nGroupSize):
-            dictRtnGroups[nIndex] = setStocks
+            dictRtnGroups[nIndex] = list(dfDailyData_St.index)
     else:
         nRemainder = nSectionSize % nGroupSize
         nAverageSize = 0
@@ -108,6 +108,34 @@ def SortingGroup_Pandas(dfDailyData_St, nGroupSize, nGroupBaseId, bMore2Less = T
                 nGroupId += 1
     return dictRtnGroups
 
+def SortingGroup_Pandas_IntCommon(dtTradingDay, dfDailyData_St, nGroupSize, nGroupBaseId, bMore2Less = True):
+    # print(dfDailyData_St)
+    stockIndustPeriod = industry.CStockIndustryPeriod_Pandas()
+    dictInd1 = {}
+    dictInd2 = {}
+    list1 = []
+    for strStockCode in dfDailyData_St.index:
+        strICode = stockIndustPeriod.GetStockIndustry(dtTradingDay, strStockCode)
+        strICodeL1 = industry.CIndustryBaseInfo.ToLevel1Code_Static(strICode)
+
+        dictInd1[strStockCode] = strICodeL1
+        if (strICodeL1 not in dictInd2.keys()):
+            dictInd2[strICodeL1] = []
+        dictInd2[strICodeL1].append(strStockCode)
+        if strICodeL1 != '-' and strICodeL1 != None:
+            list1.append(strStockCode)
+
+    dictIndustry2Group = {}
+    for strICodeL1 in dictInd2.keys():
+        if strICodeL1 == None:
+            continue
+        dfInd = dfDailyData_St.ix[dictInd2[strICodeL1]]
+        dictIndustry2Group[strICodeL1] = SortingGroup_Pandas(dfInd, nGroupSize, nGroupBaseId, bMore2Less)
+    return dictIndustry2Group
+
+def SortingGroup_Pandas_IntOls(dfDailyData_St, nGroupSize, nGroupBaseId, bMore2Less = True):
+    
+    pass
 
 def AdjustPosition(dfPandSAll, dictPositionSrc, listStocks, inputTradingDay, euSs, euInt = industry.EU_IndustrialNeutralType.euInt_None):
     """
@@ -129,24 +157,56 @@ def AdjustPosition(dfPandSAll, dictPositionSrc, listStocks, inputTradingDay, euS
     dfSorted = dfSections.sort_values(strCol, ascending = False)
     nRows = len(dfSorted)
 
-    nBaseGroupId = sorted(dictPositionSrc.keys())[0]
-    dictRtnGroups = SortingGroup_Pandas(dfSorted.ix[dtTradingDay], len(dictPositionSrc), nBaseGroupId)
-
     dictPosition_Df = {}
     for nGroupId in dictPositionSrc.keys():
-        dFundGroup = dictPositionSrc[nGroupId].dTotalMarketValue
-        nGroupStockCount = len(dictRtnGroups[nGroupId])
-        if (nGroupStockCount <= 0):
-            continue
+        dictPosition_Df[nGroupId] = pd.DataFrame()
+        
+    nBaseGroupId = sorted(dictPositionSrc.keys())[0]
+    if euInt == industry.EU_IndustrialNeutralType.euInt_None:
+        # 将各个分组的资金平均分配到每只股票上
+        dictRtnGroups = SortingGroup_Pandas(dfSorted.ix[dtTradingDay], len(dictPositionSrc), nBaseGroupId)        
+        for nGroupId in dictPositionSrc.keys():
+            dFundGroup = dictPositionSrc[nGroupId].dTotalMarketValue
+            nGroupStockCount = len(dictRtnGroups[nGroupId])
+            if (nGroupStockCount <= 0):
+                continue
 
-        dFundStock = dFundGroup / nGroupStockCount
-        dictPosition_Df[nGroupId] = DataFrame(np.array([dFundStock] * nGroupStockCount),\
-                                          index=[[dtTradingDay]*nGroupStockCount, dictRtnGroups[nGroupId]],\
-                                          columns=[str(nGroupId)])
+            dFundStock = dFundGroup / nGroupStockCount
+            dictPosition_Df[nGroupId] = DataFrame(np.array([dFundStock] * nGroupStockCount),\
+                                              index=[[dtTradingDay]*nGroupStockCount, dictRtnGroups[nGroupId]],\
+                                              columns=[str(nGroupId)])
 
-        # print(dictPosition_Df[nGroupId])
-        # dictPosition[nGroupId].dTotalMarketValue = dictPositionSrc[nGroupId].dTotalMarketValue
+            # print(dictPosition_Df[nGroupId])
+            # dictPosition[nGroupId].dTotalMarketValue = dictPositionSrc[nGroupId].dTotalMarketValue
+    else:
+        if euInt == industry.EU_IndustrialNeutralType.euInt_Common:
+            # 将各个分组的资金先平均分配到各个行业中，再将各个行业中的资金平均分配到对应的股票上
+            dictIndustry2Group = SortingGroup_Pandas_IntCommon(dtTradingDay, dfSorted.ix[dtTradingDay], len(dictPositionSrc), nBaseGroupId)
+            industryLen = len(dictIndustry2Group)
+            if industryLen <= 0:
+                return False, None
 
+            for nGroupId in dictPositionSrc.keys():
+                dFundGroup = dictPositionSrc[nGroupId].dTotalMarketValue
+                dFundAverage_Ind = dFundGroup / industryLen
+                for strICode in dictIndustry2Group.keys():
+                    # if strICode == None:
+                    #     continue
+                    if nGroupId not in dictIndustry2Group[strICode].keys():
+                        continue
+                    stockLen = len(dictIndustry2Group[strICode][nGroupId])
+                    if stockLen <= 0:
+                        return False, None
+                    dFundAverage_Stock = dFundAverage_Ind / stockLen
+                    df = DataFrame(np.array([dFundAverage_Stock] * stockLen),\
+                        index=[[dtTradingDay]*stockLen,dictIndustry2Group[strICode][nGroupId]],\
+                        columns=[str(nGroupId)])
+                    dictPosition_Df[nGroupId] = pd.concat([dictPosition_Df[nGroupId], df], axis = 0, join = 'outer')
+                    pass
+
+        elif euInt == industry.EU_IndustrialNeutralType.euInt_OlsResidualError:
+            pass
+    
     return True, dictPosition_Df
     pass
 
@@ -165,7 +225,8 @@ def InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt,
     if (euInt != industry.EU_IndustrialNeutralType.euInt_None):
         print('DBReqIndustries_ZX ...')
         windDbBusiness.DBReqIndustries_ZX(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
-
+        windDbBusiness.DBReqStockIndustries_ZX_Pandas(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
+        
     print('DBReqStockPool ...')
     # if (False == windDbBusiness.DBReqStockPool(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt, nInputBeginDate, nInputEndDate)):
     if (False == windDbBusiness.DBReqStockPool_Pandas(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt)):
@@ -175,7 +236,7 @@ def InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, euSpt,
     return None
 
 
-def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions):
+def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions, euInt):
     dtIntervalBegin = listTradingDays[0]
     nLoopIntervalBegin = int(dateTime.ToIso(dtIntervalBegin))
 
@@ -238,11 +299,15 @@ def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions)
     dictPositions_DfAll = {}
     for euSs in listSs:
         # 调仓
-        bSuccess, dictPositions_Df = AdjustPosition(dfPandSAll, dictSsPositions[euSs], listStocksInSp, nLoopIntervalBegin, euSs)
+        bSuccess, dictPositions_Df = AdjustPosition(dfPandSAll, dictSsPositions[euSs], listStocksInSp, nLoopIntervalBegin, euSs, euInt)
         if (bSuccess == False):
             # print('AdjustPosition Falied', nBeginDateFix, euSs)
             return False, 'AdjustPosition Falied'
-
+        
+        # for nGroupId in dictPositions_Df.keys():
+        #     for row in dictPositions_Df[nGroupId].columns:
+        #         print(dictPositions_Df[nGroupId][row].sum())
+        
         dictAllPositions_DfByGroup = {}
         for nGroupId in dictPositions_Df.keys():
             dictPositions_Df[nGroupId].index.names = ['TRADING_DAY','STOCK_WINDCODE']
@@ -295,7 +360,7 @@ def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions)
 
 
 # def ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, nBeginDate, nEndDate, euSpt, listSs, nDateInterval, nGroupSize, dictSsPositions):
-def ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTradingDays, euSpt, listSs, nDateInterval, nGroupSize, dictSsPositions):
+def ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTradingDays, euSpt, listSs, nDateInterval, nGroupSize, dictSsPositions, euInt):
     spManager = stockPool.CStockPoolManager_Pandas()
     spInst = spManager.GetStockPool(euSpt)
     tcInst = tCal.CTradingCalendar()
@@ -354,7 +419,7 @@ def ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTr
         listTradingDays_Interval = listTradingDays[nLoopIndex * nDateInterval : nIntervalTailIndex]
         print(listTradingDays_Interval)
         
-        bSuccess, dictIndexInterval = ProcessInterval(dfPandSAll, listSs, listTradingDays_Interval, euSpt, dictSsPositions)
+        bSuccess, dictIndexInterval = ProcessInterval(dfPandSAll, listSs, listTradingDays_Interval, euSpt, dictSsPositions, euInt)
         if (bSuccess == True):
             for euSs in dictIndexYearLoop.keys():
                 dictIndexYearLoop[euSs].update(dictIndexInterval[euSs])
@@ -436,7 +501,7 @@ def ProcessStockSections(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, \
         nEndDateFix = int(dateTime.ToIso(dtEndDateFix))
         # print('from ' + str(nBeginDateFix) + ' to ' + str(nEndDateFix))        
 
-        bSuccess, dictIndexYearLoop = ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTradingDays, euSpt, listSs, nDateInterval, nGroupSize, dictSsPositions)
+        bSuccess, dictIndexYearLoop = ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTradingDays, euSpt, listSs, nDateInterval, nGroupSize, dictSsPositions, euInt)
         for euSs in dictIndexYearLoop.keys():
             dictSsDailyIndex[euSs].update(dictIndexYearLoop[euSs])
             its = sorted(dictSsDailyIndex[euSs].items())

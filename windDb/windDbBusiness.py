@@ -13,7 +13,7 @@ import business.industry as industry
 import business.mdBar as mdBar
 import business.stockSection as stockSection
 import utils.dateTime as dateTime
-import windDb
+import windDb as windDb
 
 # DBReqTradingCalendar {
 def DBReqTradingCalendar(strHost, strUser, strPwd, strDb):
@@ -212,7 +212,7 @@ def DBReqStockIndustries_ZX_Pandas(strHost, strUser, strPwd, strDb):
     if (dfStockInd.empty):
         return False
 
-    stockIndInst = industry.CStockIndustryPeriodr_Pandas()
+    stockIndInst = industry.CStockIndustryPeriod_Pandas()
     stockIndInst.SetData(dfStockInd)
     return True
     pass
@@ -236,7 +236,7 @@ def DBReqStockSections_Pandas(strHost, strUser, strPwd, strDb, setSst, listStock
 # print(len(setRtn), setRtn)
 
 # DBReqStockIndustries_ZX_Pandas('10.63.6.100','ForOTC','otc12345678','WindDB')
-# stockIndInst2 = industry.CStockIndustryPeriodr_Pandas()
+# stockIndInst2 = industry.CStockIndustryPeriod_Pandas()
 # stockIndInst2.Print()
 # print(stockIndInst2.GetStockIndustry(20120101, '603988.SH'))
 # print(stockIndInst2.GetStockIndustry(20141201, '603988.SH'))
