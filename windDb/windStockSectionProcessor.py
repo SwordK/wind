@@ -298,6 +298,7 @@ def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions,
     # 计算每日指数， 保存于dictPositions_DfAll
     dictPositions_DfAll = {}
     for euSs in listSs:
+        strSs = stockSection.SsToString(euSs)
         # 调仓
         bSuccess, dictPositions_Df = AdjustPosition(dfPandSAll, dictSsPositions[euSs], listStocksInSp, nLoopIntervalBegin, euSs, euInt)
         if (bSuccess == False):
@@ -324,6 +325,9 @@ def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions,
         
         dictPositions_DfAll[euSs] = {}
         for nGroupId in sorted(dictAllPositions_DfByGroup.keys()):
+            strCsvFile = 'StockSectionDailyConstituent' + '_' + stockSection.SsToString(euSs) + '.csv'
+            dfDump = dictAllPositions_DfByGroup[nGroupId].stack()            
+            dfDump.to_csv(strCsvFile, mode='a',header=None)
             for dtTradingDay in sorted(dictAllPositions_DfByGroup[nGroupId].index.levels[0]):
                 nTd = int(dateTime.ToIso(dtTradingDay))
                 # 不保存调仓日指数
@@ -333,29 +337,8 @@ def ProcessInterval(dfPandSAll, listSs, listTradingDays, euSpt, dictSsPositions,
                     dictPositions_DfAll[euSs][dtTradingDay] = {}
                 dSum = dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay][str(nGroupId)].sum()
                 dictPositions_DfAll[euSs][dtTradingDay][nGroupId] = dSum
-                print(dtTradingDay, nGroupId, dSum)
-                
-                if (nTd == 20071226):
-                    list1 = []
-                    for indexItem in dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay].index:
-                        df1 = dfPricesInterval[strColPrice]
-                        df2 = df1[dtTradingDay]
-                        dPrice = df2[indexItem]
-                        # dPrice = df
-                        # dPrice = dfPandSAll[strColPrice].ix[dtTradingDay].ix[indexItem]
-                        strValue = str(indexItem) + '|' + str(float(dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay].ix[indexItem])) + '|' + str(float(dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay].ix[indexItem] / dSum)) + '|' + str(float(dPrice))
-                        
-                        list1.append(strValue)
+                print(strSs + ' ' + str(dtTradingDay) + ' ' + str(nGroupId) + ' ' + str(dSum))
 
-                    print(list1)
-                    print("##############")
-
-                    # print(len(dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay].index), dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay].index)
-                    # print("##############")
-                    # print(dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay])
-                    # print("##############")
-                # print(dictAllPositions_DfByGroup[nGroupId].ix[dtTradingDay].index)
-    
     return True, dictPositions_DfAll
 
 
@@ -393,8 +376,8 @@ def ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTr
         if (dictSsPositions[euSs] == None):   # 未初始化
             if(nBeginDate == dictDefault1stTradingDay[euSpt]):   # 通过首日进行初始化
                 dictSsPositions[euSs] = {}
-                nGroupIndex = 0
-                while nGroupIndex < nGroupSize:
+                nGroupIndex = 1
+                while nGroupIndex <= nGroupSize:
                     dictSsPositions[euSs][nGroupIndex + nGroupBaseId] = indexPosition.CPosition_Index()
                     dictSsPositions[euSs][nGroupIndex + nGroupBaseId].dTotalMarketValue = dBaseIndexValue
                     nGroupIndex += 1
@@ -417,7 +400,7 @@ def ProcessYearLoop(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listTr
         ## 获取nDateInterval 个TradingDay，保存在listTradingDays_Interval中        
         nIntervalTailIndex = min((nLoopIndex+1)*nDateInterval, nTdLen) + 1
         listTradingDays_Interval = listTradingDays[nLoopIndex * nDateInterval : nIntervalTailIndex]
-        print(listTradingDays_Interval)
+        # print(listTradingDays_Interval)
         
         bSuccess, dictIndexInterval = ProcessInterval(dfPandSAll, listSs, listTradingDays_Interval, euSpt, dictSsPositions, euInt)
         if (bSuccess == True):

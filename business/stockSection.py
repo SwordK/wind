@@ -58,7 +58,33 @@ def Ss2Sst(euSs):
 def GetSupportedSs():
     return 'pe|pb|pcf|ps|mv|dqmv|fdqmv|yoynetprofit|yoysales|yoyequity|yoyroe|yoyocf|roededucted'
 
+
+dictStr2Ss = { "pe":EU_StockSection.euSs_Pe, \
+    "pb":EU_StockSection.euSs_Pb, \
+    "pcf":EU_StockSection.euSs_Pcf, \
+    "ps":EU_StockSection.euSs_Ps, \
+    "mv":EU_StockSection.euSs_MarketValueTotal, \
+    "dqmv":EU_StockSection.euSs_MarketValueFlowing, \
+    "fdqmv":EU_StockSection.euSs_MarketValueFlowingFree, \
+    "yoynetprofit":EU_StockSection.euSs_Qfa_yoynetprofit, \
+    "yoysales":EU_StockSection.euSs_Qfa_yoysales, \
+    "yoyequity":EU_StockSection.euSs_Fa_yoy_equity, \
+    "yoyroe":EU_StockSection.euSs_Fa_yoyroe, \
+    "yoyocf":EU_StockSection.euSs_Fa_yoyocf, \
+    "roededucted":EU_StockSection.euSs_Qfa_roe_deducted }
+    
+def SsToString(euSs):
+    for strSs in dictStr2Ss.keys():
+        if dictStr2Ss[strSs] == euSs:
+            return strSs
+    return ""
+    
 def SsFromString(strSs):
+    if strSs not in dictStr2Ss.keys():
+        return EU_StockSection.euSs_None
+    else:
+        return dictStr2Ss[strSs]
+    """
     if (strSs == ""):
         return EU_StockSection.euSs_None;
     elif (strSs == "pe"):
@@ -89,7 +115,7 @@ def SsFromString(strSs):
         return EU_StockSection.euSs_Qfa_roe_deducted;
     else:
         return EU_StockSection.euSs_None;
-
+    """
 # print(SsFromString('yoyocf').value)
 
 def DfColFromEuSs(euSs):
