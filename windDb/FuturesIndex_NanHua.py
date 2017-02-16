@@ -7,6 +7,7 @@
 
 
 import sys;sys.path.append("../")
+import getopt
 import datetime
 import pymssql
 import numpy as np
@@ -38,6 +39,7 @@ def InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDat
     @CF: Commodity Futures
     @return: dfCFPrice, dfCFMapping
     """
+    print('InitData_Common ...')
     windDbBusiness.DBReqTradingCalendar(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
     wDb = windDb.CWindDb(strDbHost, strDbUserName, strDbPasswd, strDbDatabase)
     dfCFPrice = wDb.DBReqCommondityFuturesEODPrices(strDateFrom, strDateTo)
@@ -63,14 +65,14 @@ def IndexMulti():
 # dictCFIdxComponentByTd = {}
 
 
-def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom, strDateTo):
+def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom, strDateTo, strCsvFile):
     # 初始化数据
     tcInst = tCal.CTradingCalendar()
     ## 资金总额，分配到不同的成分中
     dFundTotal = BaseIndexValue() * IndexMulti()
 
     ## 读取成分比重
-    dfCFIndexWeight_NanHua = pd.read_csv("CommondityFuturesIndexWeight_NanHua.csv")
+    dfCFIndexWeight_NanHua = pd.read_csv(strCsvFile)
     nCFRowLen = len(dfCFIndexWeight_NanHua)
     nCFColLen = len(dfCFIndexWeight_NanHua.columns)
     nCFRowIndex = 0
@@ -78,11 +80,13 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
     ## 行情数据；连续合约实际合约对应表
     ### 循环处理成分比重表示，第一循环从数据库读取数据
     dfCFPrice = pd.DataFrame()
-    dfCFMapping = pd.DataFrame()
+    dfCFMapping = pd.DataFrame()    
 
     dt1stDate = None
     dtLastDate = dateTime.ToDateTime(strDateTo)
 
+    dictDailyIndexValue = {}
+    dtDailyConstituent = pd.DataFrame()
     # 每次循环做一次一次指数成分调整
     while nCFRowIndex < nCFRowLen:
         dictFundByProduct = {}  # 各个品种分配的资金
@@ -100,12 +104,12 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                 if dValue != 0:
                     dictFundByProduct[strCol] = dfCFIndexWeight_NanHua[strCol][nCFRowIndex] * dFundTotal
             nColIndex += 1
-
+        
         # 查询数据库， 初始化数据
         if (nCFRowIndex == 0):
             dt1stDate = dtLoopFrom
             dfCFPrice, dfCFMapping = InitData_Common(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, dateTime.ToIso(dt1stDate), strDateTo)
-
+        
         # 处理结束日期
         if nCFRowIndex + 1 == nCFRowLen:
             dtLoopTo = dtLastDate
@@ -126,7 +130,9 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
             else:
                 print('tcInst.GetNextTradingDay failed', 'SHFE', dtLoopTo)
                 break
-
+        
+        print('--------------------------------------------------------------------')
+        print('Processing From ' + dateTime.ToIso(dtLoopFrom) + ' To ' + dateTime.ToIso(dtLoopTo))
 
         # 处理每个成分
         dfLoopAll = pd.DataFrame()
@@ -162,7 +168,7 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                     bIncludeTailRow = False
 
                 # 获取时间区间的行情数据
-                listDates = tcInst.GetTradingDayList(strExchange, dtProductFrom, dtProductTo, True)
+                listDates = tcInst.GetTradingDayList(strExchange, dtProductFrom, dtProductTo, True)                
                 dfLoopMd = dfCFPrice.ix[strInstrument].ix[listDates].dropna()
                 # 处理缺失的行情数据，使用昨收盘和昨结算
                 if len(list(set(listDates).difference(dfLoopMd.index))) >= 1:
@@ -198,28 +204,101 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                     dfLoopMd['Volume'][strProduct][dtProductFrom:dtProductTo]
 
                 dfLoopMd['Value'][strProduct][dtProductFrom] = dictFundByProduct[strProduct]
-                print('----------------------------')
-                print(strProduct, dtProductTo)
-                print(dfLoopMd['Value'][strProduct])
+                # print('----------------------------')
+                # print(strProduct, dtProductTo)
+                # print(dfLoopMd['Value'][strProduct])
                 dictFundByProduct[strProduct] = dfLoopMd['Value'][strProduct][dtProductTo]
 
                 if bIncludeTailRow == True:
                     dfLoopAll = pd.concat([dfLoopAll, dfLoopMd], axis=0, join='outer')
                 else:
                     dfLoopAll = pd.concat([dfLoopAll, dfLoopMd[:-1]], axis=0, join='outer')
+        
+        dtDailyConstituent = pd.concat([dtDailyConstituent, dfLoopAll], axis=0, join='outer')
 
-        dfLoopAll.to_csv('123.csv')
+        # dfLoopAll.to_csv('123.csv')
         dfSwap = dfLoopAll.swaplevel(0,1)
-        print(dfSwap)
-        for dtKey in dfSwap['Value'].index.levels[0]:
-
+        # print(dfSwap)
+        for dtKey in dfSwap['Value'].index.levels[0]:            
             total = dfSwap['Value'][dtKey].sum()
+            dictDailyIndexValue[dtKey] = total
             print(str(dtKey) + ' ' + str(dfSwap['Value'][dtKey].sum()))
 
-
         nCFRowIndex += 1
-        print('--------------------------------------------------------------------')
+
+    
+    print('Dump Index Value into index_daily.csv')
+    fIndex = open('index_daily.csv', 'w')
+    for key in sorted(dictDailyIndexValue.keys()):
+        strOutput = dateTime.ToIso(key) + ',' + str(dictDailyIndexValue[key] / IndexMulti()) + '\n'
+        fIndex.write(strOutput)
+    fIndex.close()
+    print('Dump Index Daily Constituent into index_daily_constituent.csv')
+    dtDailyConstituent.to_csv('index_daily_constituent.csv')
+    
+def Usage(strAppName):
+    """
+    """
+    strUsage = strAppName + '-b <begindate> -e <enddate> -f <csvfile> \n'
+    strUsage += "  DESCRIPTION \n"
+    strUsage += "    -b, --begindate\n"
+    strUsage += "      [date]   set Begin Date [yyyymmdd]\n"
+    strUsage += "    -e, --enddate\n"
+    strUsage += "      [date]   set End Date [yyyymmdd]\n"
+    strUsage += "    -f, --csvfilename\n"
+    strUsage += "      [string] csv file name\n"
+    
+    return strUsage
 
 
+def ParseOpts(strAppName, argv):
+    """
+    @return: begindate, enddate, csvFileName
+    """
+    try:
+      opts, args = getopt.getopt(argv,"hb:e:f:",["begindate=","enddate=","csvfilename="])
+    except getopt.GetoptError:
+        print('params error')
+        print(Usage(strAppName))
+        sys.exit(2)
 
-# CalcIndex('10.63.6.100', 'ForOTC', 'otc12345678', 'WindDB', '20040601', '20170215')
+    if (len(opts) == 0):
+        print(Usage(strAppName))
+        sys.exit(2)
+
+    strBeginDate = ''
+    strEndDate = ''
+    strCsvFileName = ''
+    for opt, arg in opts:
+        if opt == '-h':
+            Print(Usage(strAppName))
+            sys.exit()        
+        elif opt in ("-b", "--begindate"):
+            strBeginDate = arg
+        elif opt in ("-e", "--enddate"):
+            strEndDate = arg
+        elif opt in ("-f", "--csvfilename"):
+            strCsvFileName = arg        
+
+    return strBeginDate, strEndDate, strCsvFileName
+
+# "CommondityFuturesIndexWeight_NanHua.csv"
+def main(listArgs):
+    listParams = ParseOpts(listArgs[0], listArgs[1:])
+    if (len(listParams) != 3):
+        print('params parse error')
+        sys.exit(2)
+    strDbHost = ''
+    strDbUserName = ''
+    strDbPasswd = ''
+    strDbDatabase = ''
+
+    strDbHost = '10.63.6.100'
+    strDbUserName = 'ForOTC'
+    strDbPasswd = 'otc12345678'
+    strDbDatabase = 'WindDB'
+
+    CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listParams[0], listParams[1], listParams[2])
+
+if __name__ == '__main__':
+    main(sys.argv)
