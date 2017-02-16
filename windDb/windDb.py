@@ -465,6 +465,67 @@ class CWindDb(object):
         return dfEOD, dfFinancial
 
 
+    def DBReqCommondityFuturesContractMapping_Pandas(self, strFrom, strTo):
+        """
+        """
+        strSelect = "select S_INFO_WINDCODE,FS_MAPPING_WINDCODE,STARTDATE,ENDDATE from CFUTURESCONTRACTMAPPING "
+        strSelect += " where S_INFO_WINDCODE IN ("
+        strSelect += " 'I.DCE','RB.SHF','RU.SHF','AU.SHF','ZN.SHF','CU.SHF','T.CFE','M.DCE','NI.SHF','TA.CZC','MA.CZC',"
+        strSelect += " 'P.DCE','J.DCE','AG.SHF','C.DCE','BU.SHF','Y.DCE','L.DCE','SR.CZC','PP.DCE','CF.CZC','RM.CZC',"
+        strSelect += " 'FG.CZC','HC.SHF','OI.CZC','JM.DCE','AL.SHF','IF.CFE','IC.CFE','CS.DCE','A.DCE','TF.CFE','PB.SHF',"
+        strSelect += " 'V.DCE','JD.DCE','ZC.CZC','TC.CZC','IH.CFE','SN.SHF','SM.CZC','WH.CZC','FU.SHF','RI.CZC','FB.DCE',"
+        strSelect += " 'LR.CZC','SF.CZC','B.DCE','BB.DCE','JR.CZC')"
+        strSelect += " and STARTDATE != '' and ENDDATE != ''"
+        if (strFrom != ""):
+            strSelect += " and ENDDATE >= '" + strFrom + "'"
+        if (strTo != ""):
+            strSelect += " and STARTDATE <= '" + strTo + "'"
+        strSelect += " order by S_INFO_WINDCODE, startdate"
+        # print(strSelect)
+        
+        conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
+        df = pd.read_sql_query(strSelect, conn, parse_dates = ['STARTDATE','ENDDATE'])
+        conn.close()
+        return df.set_index(['S_INFO_WINDCODE', 'STARTDATE', 'ENDDATE'])      
+
+    
+    def DBReqCommondityFuturesEODPrices(self, strFrom, strTo):
+        """
+        """
+        strSelect = "select S_INFO_WINDCODE, TRADE_DT, S_DQ_CLOSE, S_DQ_SETTLE from CCOMMODITYFUTURESEODPRICES where fs_info_type = 2"
+        if (strFrom != None):
+            strSelect += " and TRADE_DT >= '" + strFrom + "'"
+        if (strFrom != None):
+            strSelect += " and TRADE_DT <= '" + strTo + "'"
+        strSelect += " order by S_INFO_WINDCODE, TRADE_DT;"
+        # print(strSelect)
+
+        conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
+        df = pd.read_sql_query(strSelect, conn, parse_dates = ['TRADE_DT'])
+        conn.close()
+        return df.set_index(['S_INFO_WINDCODE', 'TRADE_DT'])
+
+    def DBReqFuturesContPro(self):
+        strSelect = "select S_INFO_WINDCODE, S_INFO_CODE, S_INFO_EXNAME from CFUTURESCONTPRO"
+        strSelect += " where S_INFO_EXNAME in ('CZCE', 'DCE', 'SHFE', 'CFFEX')"
+        conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
+        df = pd.read_sql_query(strSelect, conn, parse_dates = ['TRADE_DT'])
+        conn.close()
+        return df.set_index(['S_INFO_WINDCODE'])
+        pass
+    
+    def DBReqFuturesContPro(self):
+        strSelect = "select S_INFO_WINDCODE, FS_INFO_SCCODE, S_INFO_EXCHMARKET, FS_INFO_LPRICE from CFUTURESDESCRIPTION "
+        strSelect += "where "
+        strSelect += "  fs_info_type = 1 "
+        strSelect += "  and S_INFO_EXCHMARKET in ('CZCE', 'DCE', 'SHFE', 'CFFEX') "
+        strSelect += "  and FS_INFO_SCCODE in ('I','RB','RU','AU','ZN','CU','T','M','NI','TA','MA','P','J','AG','C','BU','Y','L','SR','PP','CF','RM','FG','HC','OI','JM','AL','IF','IC','CS','A','TF','PB','V','JD','ZC','IH','SN','SM','WH','FU','RI','FB','LR','SF','B','BB','JR')"
+        strSelect += "  order by S_INFO_WINDCODE"
+
+        conn = pymssql.connect(host=self.__strHost, user=self.__strUser, password=self.__strPwd, database=self.__strDB, charset="utf8")
+        df = pd.read_sql_query(strSelect, conn)
+        conn.close()
+        return df.set_index(['S_INFO_WINDCODE'])
 
 # wDb = CWindDb('10.63.6.100', 'ForOTC', 'otc12345678', 'WindDB')
 # listStocks = ['600000.SH', '000002.SZ']

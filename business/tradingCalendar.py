@@ -40,6 +40,19 @@ class CTradingCalendar(object):
                 return False
             nTradingDay = int(strTd)
         return nTradingDay in self.__dictTc[strExchange]
+    
+    def GetPreTradingDay(self, strExchange, tradingDay):
+        dtTradingDay = dateTime.ToDateTime(tradingDay)
+        nTradingDay = int(dateTime.ToIso(tradingDay))
+        if nTradingday <= self.__dictTc[strExchange][0]:
+            return False, 0
+
+        while True:
+            dtTradingDay = Yestoday(dtTradingDay)
+            nTradingDay = int(dateTime.ToIso(dtTradingDay))
+            if self.IsTradingDay(nTradingDay) == True:
+                return True, nTradingDay                
+
 
     def GetNextTradingDay(self, strExchange, tradingDay):
         nTradingDay = tradingDay           
@@ -73,7 +86,26 @@ class CTradingCalendar(object):
                     return True, nDay
             return False, 0
 
-
+    def GetTradingDayList(self, strExchange, dtFrom, dtTo, bDateTime = False):
+        listRtn = []
+        nTradingDay = int(dateTime.ToIso(dtFrom))
+        nTdTo = int(dateTime.ToIso(dtTo))
+        if self.IsTradingDay(strExchange, nTradingDay) == True:
+            if bDateTime == True:
+                listRtn.append(dateTime.ToDateTime(dtFrom))
+            else:
+                listRtn.append(nTradingDay)
+        while True:
+            bSuccess, nTradingDay = self.GetNextTradingDay(strExchange, nTradingDay)
+            if bSuccess == False or nTradingDay > nTdTo:
+                break
+            if bDateTime == True:
+                dtTradingDay = dateTime.ToDateTime(nTradingDay)
+                listRtn.append(dtTradingDay)
+            else:
+                listRtn.append(nTradingDay)
+        return listRtn
+    
     def GetTradingDayCount(self, strExchange, tdFrom, tdTo):
         if (self.IsTradingDay(strExchange, tdFrom) == False or self.IsTradingDay(strExchange, tdTo) == False):
             return False, 0
