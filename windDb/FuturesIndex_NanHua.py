@@ -213,26 +213,30 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                     dfLoopAll = pd.concat([dfLoopAll, dfLoopMd], axis=0, join='outer')
                 else:
                     dfLoopAll = pd.concat([dfLoopAll, dfLoopMd[:-1]], axis=0, join='outer')
-        
-        dtDailyConstituent = pd.concat([dtDailyConstituent, dfLoopAll], axis=0, join='outer')
 
-        # dfLoopAll.to_csv('123.csv')
         dfSwap = dfLoopAll.swaplevel(0,1)
-        # print(dfSwap)
+        dfSwap['Weight'] = np.nan
         for dtKey in dfSwap['Value'].index.levels[0]:            
             total = dfSwap['Value'][dtKey].sum()
             dictDailyIndexValue[dtKey] = total
             print(str(dtKey) + ' ' + str(dfSwap['Value'][dtKey].sum()))
-
+            dfSwap['Weight'][dtKey] = dfSwap['Value'][dtKey] / total
         nCFRowIndex += 1
-
+        dtDailyConstituent = pd.concat([dtDailyConstituent, dfSwap], axis=0, join='outer')    
     
+    
+    # 处理每日每个品种的权重    
+    dtDailyConstituent = dtDailyConstituent.swaplevel(0, 1)
     print('Dump Index Value into index_daily.csv')
     fIndex = open('index_daily.csv', 'w')
     for key in sorted(dictDailyIndexValue.keys()):
         strOutput = dateTime.ToIso(key) + ',' + str(dictDailyIndexValue[key] / IndexMulti()) + '\n'
         fIndex.write(strOutput)
     fIndex.close()
+
+    del dtDailyConstituent['Volume']
+    del dtDailyConstituent['Value']    
+
     print('Dump Index Daily Constituent into index_daily_constituent.csv')
     dtDailyConstituent.to_csv('index_daily_constituent.csv')
     
