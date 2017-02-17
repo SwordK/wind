@@ -192,6 +192,7 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                 dfLoopMd['Value'] = np.nan
                 dfLoopMd.reset_index(inplace=True)
                 dfLoopMd = dfLoopMd.set_index(['DominantContract','TRADE_DT'])
+                dfLoopMd = dfLoopMd.sortlevel(1)
 
                 dPrice = dfLoopMd['S_DQ_CLOSE'][strProduct][dtProductFrom]
                 dVolume = dictFundByProduct[strProduct] / dPrice
@@ -203,10 +204,7 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                 dfLoopMd['Value'][strProduct][dtProductFrom] = dictFundByProduct[strProduct]
                 dictFundByProduct[strProduct] = dfLoopMd['Value'][strProduct][dtProductTo]
 
-                if bIncludeTailRow == True:
-                    dfLoopAll = pd.concat([dfLoopAll, dfLoopMd], axis=0, join='outer')
-                else:
-                    dfLoopAll = pd.concat([dfLoopAll, dfLoopMd[:-1]], axis=0, join='outer')
+                dfLoopAll = pd.concat([dfLoopAll, dfLoopMd[:-1]], axis=0, join='outer')
         
         dfSwap = dfLoopAll.swaplevel(0,1)
         dfSwap['Weight'] = np.nan
@@ -232,7 +230,7 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
 
     print('Dump Index Daily Constituent into index_daily_constituent.csv')
     dtDailyConstituent['IndexType'] = euCFI.value
-    dtDailyConstituent.to_csv('index_daily_constituent.csv')
+    dtDailyConstituent.to_csv('index_daily_constituent.csv', header = False)
     
 
 def Usage(strAppName):
