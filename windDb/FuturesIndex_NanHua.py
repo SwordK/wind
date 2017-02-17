@@ -9,6 +9,7 @@
 import sys;sys.path.append("../")
 import getopt
 import datetime
+from enum import Enum
 import pymssql
 import numpy as np
 import pandas as pd
@@ -18,6 +19,14 @@ import windDb as windDb
 import windDbBusiness as windDbBusiness
 
 import utils.dateTime as dateTime
+
+class EU_CommodityFuturesIndex_NanHua(Enum):
+    euCFI_NH_None = 0                   #
+    euCFI_NH_ComprehensiveIndex = 1     # 综合指数
+    euCFI_NH_IndustrialIndex = 2        # 工业品
+    euCFI_NH_AgriculturalIndex = 3      # 农产品
+    euCFI_NH_MetalIndex = 4             # 金属
+    euCFI_NH_EnergyChemicalIndex = 5    # 能源化工
 
 def GetExchange(strInstId):
     listSplit = strInstId.split('.')
@@ -53,19 +62,7 @@ def BaseIndexValue():
 def IndexMulti():
     return 1000000.0
 
-# dt1stDate = dateTime.ToDateTime('20040601')
-# dtLastDate = dateTime.ToDateTime('20170213')
-
-
-# tcInst = tCal.CTradingCalendar()
-
-
-
-
-# dictCFIdxComponentByTd = {}
-
-
-def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom, strDateTo, strCsvFile):
+def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom, strDateTo, strCsvFile, euCFI):
     # 初始化数据
     tcInst = tCal.CTradingCalendar()
     ## 资金总额，分配到不同的成分中
@@ -204,16 +201,13 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
                     dfLoopMd['Volume'][strProduct][dtProductFrom:dtProductTo]
 
                 dfLoopMd['Value'][strProduct][dtProductFrom] = dictFundByProduct[strProduct]
-                # print('----------------------------')
-                # print(strProduct, dtProductTo)
-                # print(dfLoopMd['Value'][strProduct])
                 dictFundByProduct[strProduct] = dfLoopMd['Value'][strProduct][dtProductTo]
 
                 if bIncludeTailRow == True:
                     dfLoopAll = pd.concat([dfLoopAll, dfLoopMd], axis=0, join='outer')
                 else:
                     dfLoopAll = pd.concat([dfLoopAll, dfLoopMd[:-1]], axis=0, join='outer')
-
+        
         dfSwap = dfLoopAll.swaplevel(0,1)
         dfSwap['Weight'] = np.nan
         for dtKey in dfSwap['Value'].index.levels[0]:            
@@ -224,33 +218,36 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
         nCFRowIndex += 1
         dtDailyConstituent = pd.concat([dtDailyConstituent, dfSwap], axis=0, join='outer')    
     
-    
     # 处理每日每个品种的权重    
     dtDailyConstituent = dtDailyConstituent.swaplevel(0, 1)
     print('Dump Index Value into index_daily.csv')
     fIndex = open('index_daily.csv', 'w')
     for key in sorted(dictDailyIndexValue.keys()):
-        strOutput = dateTime.ToIso(key) + ',' + str(dictDailyIndexValue[key] / IndexMulti()) + '\n'
+        strOutput = dateTime.ToIso(key) + ',' + str(dictDailyIndexValue[key] / IndexMulti())  + ',' + str(euCFI.value) + '\n'
         fIndex.write(strOutput)
-    fIndex.close()
-
+    fIndex.close()    
+    
     del dtDailyConstituent['Volume']
     del dtDailyConstituent['Value']    
 
     print('Dump Index Daily Constituent into index_daily_constituent.csv')
+    dtDailyConstituent['IndexType'] = euCFI.value
     dtDailyConstituent.to_csv('index_daily_constituent.csv')
     
+
 def Usage(strAppName):
     """
     """
-    strUsage = strAppName + '-b <begindate> -e <enddate> -f <csvfile> \n'
+    strUsage = strAppName + '-b <begindate> -e <enddate> -f <csvfile> -i <indextype>\n'
     strUsage += "  DESCRIPTION \n"
     strUsage += "    -b, --begindate\n"
     strUsage += "      [date]   set Begin Date [yyyymmdd]\n"
     strUsage += "    -e, --enddate\n"
     strUsage += "      [date]   set End Date [yyyymmdd]\n"
     strUsage += "    -f, --csvfilename\n"
-    strUsage += "      [string] csv file name\n"
+    strUsage += "      [string] csv file name\n"    
+    strUsage += "    -i, --indextype\n"
+    strUsage += "      [string] indextype < [C]omprehensiveIndex | [I]ndustrialIndex | [A]griculturalIndex | [M]etalIndex | [E]nergyChemicalIndex >\n"
     
     return strUsage
 
@@ -260,7 +257,7 @@ def ParseOpts(strAppName, argv):
     @return: begindate, enddate, csvFileName
     """
     try:
-      opts, args = getopt.getopt(argv,"hb:e:f:",["begindate=","enddate=","csvfilename="])
+      opts, args = getopt.getopt(argv,"hb:e:f:i:",["begindate=","enddate=","csvfilename=","indextype="])
     except getopt.GetoptError:
         print('params error')
         print(Usage(strAppName))
@@ -273,6 +270,7 @@ def ParseOpts(strAppName, argv):
     strBeginDate = ''
     strEndDate = ''
     strCsvFileName = ''
+    euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_None
     for opt, arg in opts:
         if opt == '-h':
             Print(Usage(strAppName))
@@ -282,14 +280,28 @@ def ParseOpts(strAppName, argv):
         elif opt in ("-e", "--enddate"):
             strEndDate = arg
         elif opt in ("-f", "--csvfilename"):
-            strCsvFileName = arg        
+            strCsvFileName = arg
+        elif opt in ("-i", "--indextype"):
+            if arg.lower() == "c":
+                euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_ComprehensiveIndex
+            elif arg.lower() == "n":
+                euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_IndustrialIndex
+            elif arg.lower() == "g":
+                euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_AgriculturalIndex
+            elif arg.lower() == "m":
+                euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_MetalIndex
+            elif arg.lower() == "e":
+                euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_EnergyChemicalIndex
+    
+    if euCFI_NH == EU_CommodityFuturesIndex_NanHua.euCFI_NH_None:
+        return None
 
-    return strBeginDate, strEndDate, strCsvFileName
+    return strBeginDate, strEndDate, strCsvFileName, euCFI_NH
 
 # "CommondityFuturesIndexWeight_NanHua.csv"
 def main(listArgs):
     listParams = ParseOpts(listArgs[0], listArgs[1:])
-    if (len(listParams) != 3):
+    if (len(listParams) != 4):
         print('params parse error')
         sys.exit(2)
     strDbHost = ''
@@ -302,7 +314,7 @@ def main(listArgs):
     strDbPasswd = 'otc12345678'
     strDbDatabase = 'WindDB'
 
-    CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listParams[0], listParams[1], listParams[2])
+    CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, listParams[0], listParams[1], listParams[2], listParams[3])
 
 if __name__ == '__main__':
     main(sys.argv)
