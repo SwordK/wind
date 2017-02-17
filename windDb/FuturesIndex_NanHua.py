@@ -282,9 +282,9 @@ def ParseOpts(strAppName, argv):
         elif opt in ("-i", "--indextype"):
             if arg.lower() == "c":
                 euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_ComprehensiveIndex
-            elif arg.lower() == "n":
+            elif arg.lower() == "i":
                 euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_IndustrialIndex
-            elif arg.lower() == "g":
+            elif arg.lower() == "a":
                 euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_AgriculturalIndex
             elif arg.lower() == "m":
                 euCFI_NH = EU_CommodityFuturesIndex_NanHua.euCFI_NH_MetalIndex
