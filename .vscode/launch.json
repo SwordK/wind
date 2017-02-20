@@ -25,7 +25,8 @@
             "args": [
                 "-b","20040601",
                 "-e","20170214",
-                "-f", "CommondityFuturesIndexWeight_NanHua.csv"
+                "-f", "1.gyp.csv"
+                "-i", "I"
             ]
         },
         {
