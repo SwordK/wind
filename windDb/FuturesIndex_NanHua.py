@@ -213,6 +213,7 @@ def CalcIndex(strDbHost, strDbUserName, strDbPasswd, strDbDatabase, strDateFrom,
             dictDailyIndexValue[dtKey] = total
             print(str(dtKey) + ' ' + str(dfSwap['Value'][dtKey].sum()))
             dfSwap['Weight'][dtKey] = dfSwap['Value'][dtKey] / total
+            dFundTotal = total
         nCFRowIndex += 1
         dtDailyConstituent = pd.concat([dtDailyConstituent, dfSwap], axis=0, join='outer')    
     
